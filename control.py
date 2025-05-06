@@ -100,19 +100,20 @@ class AntiARPCachePoisoning (object):
                     cip_latency_tracker[session_id] = current_time
 
         # Cập nhật thống kê băng thông
-        conn_key = (str(ip_pkt.srcip), str(ip_pkt.dstip))
-        now = time.time()
-        pkt_len = len(packet)
+        if ip_pkt:
+            conn_key = (str(ip_pkt.srcip), str(ip_pkt.dstip))
+            now = time.time()
+            pkt_len = len(packet)
 
-        if conn_key not in bandwidth_tracker:
-            bandwidth_tracker[conn_key] = [pkt_len, now]
-        else:
-            prev_bytes, prev_time = bandwidth_tracker[conn_key]
-            time_diff = now - prev_time
-            if time_diff > 0:
-                bw = (pkt_len * 8) / time_diff  # băng thông tính bằng bit/s
-                log.info(f"[Bandwidth] {conn_key[0]} -> {conn_key[1]}: {bw:.2f} bps")
-            bandwidth_tracker[conn_key] = [pkt_len, now]
+            if conn_key not in bandwidth_tracker:
+                bandwidth_tracker[conn_key] = [pkt_len, now]
+            else:
+                prev_bytes, prev_time = bandwidth_tracker[conn_key]
+                time_diff = now - prev_time
+                if time_diff > 0:
+                    bw = (pkt_len * 8) / time_diff  # băng thông tính bằng bit/s
+                    log.info(f"[Bandwidth] {conn_key[0]} -> {conn_key[1]}: {bw:.2f} bps")
+                bandwidth_tracker[conn_key] = [pkt_len, now]
 
         log.info("==============================")
         if packet.dst.is_multicast:
