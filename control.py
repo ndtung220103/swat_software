@@ -5,6 +5,8 @@ import threading
 import socket
 import json
 import time
+import requests
+
 log = core.getLogger()
 
 # Danh sách ánh xạ IP-to-MAC hợp lệ
@@ -17,6 +19,18 @@ VALID_IP_TO_MAC = {
 cip_latency_tracker = {}
 bandwidth_tracker = {}
 sensor_data = {}
+
+def send_metrics_to_dashboard(metrics):
+    try:
+        url = "http://127.0.0.1:5000/metrics"
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(url, headers=headers, json=metrics)
+        if response.status_code == 200:
+            log.info("[DASHBOARD] Sent metrics successfully")
+        else:
+            log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
+    except Exception as e:
+        log.error(f"[DASHBOARD] Exception: {e}")
 
 def start_udp_server():
     global sensor_data
@@ -90,7 +104,7 @@ class AntiARPCachePoisoning (object):
         if ip_pkt:
             log.info(f"IPv4: src={ip_pkt.srcip}, dst={ip_pkt.dstip}, proto={ip_pkt.protocol}")
 
-        
+        latency = 0
         # Chỉ xử lý TCP Port 44818 (ENIP)
         tcp_pkt = packet.find("tcp")
         if tcp_pkt and tcp_pkt.dstport == 44818:
@@ -119,6 +133,8 @@ class AntiARPCachePoisoning (object):
                     cip_latency_tracker[session_id] = current_time
 
         # Cập nhật thống kê băng thông
+        bw = 0
+
         if ip_pkt:
             conn_key = (str(ip_pkt.srcip), str(ip_pkt.dstip))
             now = time.time()
@@ -133,7 +149,15 @@ class AntiARPCachePoisoning (object):
                     bw = (pkt_len * 8) / time_diff  # băng thông tính bằng bit/s
                     log.info(f"[Bandwidth] {conn_key[0]} -> {conn_key[1]}: {bw:.2f} bps")
                 bandwidth_tracker[conn_key] = [pkt_len, now]
-
+        
+        metrics = {
+               "srcip": str(ip_pkt.srcip),
+               "dstip": str(ip_pkt.dstip),
+               "latency": latency,
+               "bandwidth": bw,
+               "timestamp": time.time()
+               }
+        send_metrics_to_dashboard(metrics)
         log.info("==============================")
         if packet.dst.is_multicast:
             flood()
