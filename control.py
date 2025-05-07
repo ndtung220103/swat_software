@@ -1,6 +1,9 @@
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.lib.addresses import IPAddr, EthAddr
+import threading
+import socket
+import json
 import time
 log = core.getLogger()
 
@@ -13,6 +16,22 @@ VALID_IP_TO_MAC = {
 
 cip_latency_tracker = {}
 bandwidth_tracker = {}
+sensor_data = {}
+
+def start_udp_server():
+    global sensor_data
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(("0.0.0.0", 9999))
+    log.info("[HMI-UDP] Listening for UDP sensor data on port 9999")
+
+    while True:
+        try:
+            data, addr = sock.recvfrom(8192)
+            decoded = data.decode()
+            sensor_data = json.loads(decoded)
+            log.info(f"[HMI-UDP] From {addr}: {sensor_data}")
+        except Exception as e:
+            log.error(f"[HMI-UDP] Error: {e}")
 
 class AntiARPCachePoisoning (object):
     def __init__(self, connection):
@@ -149,4 +168,6 @@ def launch():
         AntiARPCachePoisoning(event.connection)
 
     core.openflow.addListenerByName("ConnectionUp", start_switch)
+
+    threading.Thread(target=start_udp_server, daemon=True).start()
     log.info("Anti ARP Cache Poisoning Controller is running")
