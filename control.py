@@ -149,15 +149,16 @@ class AntiARPCachePoisoning (object):
                     bw = (pkt_len * 8) / time_diff  # băng thông tính bằng bit/s
                     log.info(f"[Bandwidth] {conn_key[0]} -> {conn_key[1]}: {bw:.2f} bps")
                 bandwidth_tracker[conn_key] = [pkt_len, now]
-        
-        metrics = {
-               "srcip": str(ip_pkt.srcip),
-               "dstip": str(ip_pkt.dstip),
-               "latency": latency,
-               "bandwidth": bw,
-               "timestamp": time.time()
-               }
-        send_metrics_to_dashboard(metrics)
+                
+        if ip_pkt:
+            metrics = {
+                "srcip": str(ip_pkt.srcip),
+                "dstip": str(ip_pkt.dstip),
+                "latency": latency,
+                "bandwidth": bw,
+                "timestamp": time.time()
+                }
+            send_metrics_to_dashboard(metrics)
         log.info("==============================")
         if packet.dst.is_multicast:
             flood()

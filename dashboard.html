@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Network Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f4f4f4;
+    }
+    .container {
+      display: flex;
+      width: 90%;
+      height: 80vh;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .warnings {
+      width: 30%;
+      background: #ffecec;
+      border-right: 1px solid #ccc;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    .metrics {
+      width: 70%;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background: #eee;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="warnings">
+      <h3>Warnings</h3>
+      <ul id="warnings-list"></ul>
+    </div>
+    <div class="metrics">
+      <h3>Network Metrics</h3>
+      <table id="metrics-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Src -> Dst</th>
+            <th>Latency (ms)</th>
+            <th>Latency Δ%</th>
+            <th>Bandwidth (Mbps)</th>
+            <th>Bandwidth Δ%</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+    const table = document.querySelector("#metrics-table tbody");
+    const warningList = document.querySelector("#warnings-list");
+    const metricMap = {};
+
+    function fetchData() {
+      fetch("/metrics")
+        .then(res => res.json())
+        .then(data => {
+          data.forEach(metric => {
+            const key = `${metric.srcip}->${metric.dstip}`;
+            const timestamp = new Date(metric.timestamp * 1000).toLocaleTimeString();
+            const latency = parseFloat(metric.latency).toFixed(2);
+            const bandwidth = parseFloat(metric.bandwidth).toFixed(2);
+
+            if (metricMap[key]) {
+              const prev = metricMap[key];
+              const deltaLatency = ((latency - prev.latency) / prev.latency * 100).toFixed(1);
+              const deltaBW = ((bandwidth - prev.bandwidth) / prev.bandwidth * 100).toFixed(1);
+              const row = prev.row;
+
+              row.cells[0].innerText = timestamp;
+              row.cells[2].innerText = latency;
+              row.cells[3].innerText = `${deltaLatency}%`;
+              row.cells[4].innerText = bandwidth;
+              row.cells[5].innerText = `${deltaBW}%`;
+
+              if (Math.abs(deltaLatency) > 50 || Math.abs(deltaBW) > 50) {
+                const warning = document.createElement("li");
+                warning.innerText = `[${timestamp}] ALERT ${key}: Latency Δ=${deltaLatency}%, Bandwidth Δ=${deltaBW}%`;
+                warningList.appendChild(warning);
+              }
+
+              metricMap[key].latency = latency;
+              metricMap[key].bandwidth = bandwidth;
+            } else {
+              const row = table.insertRow();
+              row.insertCell().innerText = timestamp;
+              row.insertCell().innerText = key;
+              row.insertCell().innerText = latency;
+              row.insertCell().innerText = "0%";
+              row.insertCell().innerText = bandwidth;
+              row.insertCell().innerText = "0%";
+              metricMap[key] = { row, latency, bandwidth };
+            }
+          });
+        });
+    }
+
+    setInterval(fetchData, 2000); // Refresh every 2 seconds
+  </script>
+</body>
+</html>
