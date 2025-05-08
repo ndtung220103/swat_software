@@ -78,7 +78,7 @@
     const metricMap = {};
 
     function fetchData() {
-      fetch("/metrics")
+      fetch("http://127.0.0.1:5000/metrics")
         .then(res => res.json())
         .then(data => {
           data.forEach(metric => {
