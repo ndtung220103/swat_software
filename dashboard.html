@@ -89,9 +89,23 @@
 
             if (metricMap[key]) {
               const prev = metricMap[key];
-              const deltaLatency = ((latency - prev.latency) / prev.latency * 100).toFixed(1);
+              var deltaLatency = ((latency - prev.latency) / prev.latency * 100).toFixed(1);
               const deltaBW = ((bandwidth - prev.bandwidth) / prev.bandwidth * 100).toFixed(1);
               const row = prev.row;
+              
+              if(latency == 0){
+                row.cells[0].innerText = timestamp;
+                row.cells[2].innerText = latency;
+                row.cells[3].innerText = `0%`;
+                row.cells[4].innerText = bandwidth;
+                row.cells[5].innerText = `${deltaBW}%`;
+              }else{
+                row.cells[0].innerText = timestamp;
+                row.cells[2].innerText = latency;
+                row.cells[3].innerText = `${deltaLatency}%`;
+                row.cells[4].innerText = bandwidth;
+                row.cells[5].innerText = `${deltaBW}%`;
+              }
 
               row.cells[0].innerText = timestamp;
               row.cells[2].innerText = latency;
