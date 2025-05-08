@@ -107,30 +107,29 @@ class AntiARPCachePoisoning (object):
         latency = 0
         # Chỉ xử lý TCP Port 44818 (ENIP)
         tcp_pkt = packet.find("tcp")
-        if tcp_pkt and tcp_pkt.dstport == 44818:
-            log.info(f"ENIP Packet Detected: src_port={tcp_pkt.srcport}, dst_port={tcp_pkt.dstport}")
-            session_id = f"{ip_pkt.srcip}:{tcp_pkt.srcport} -> {ip_pkt.dstip}:{tcp_pkt.dstport}"
-            payload = bytes(tcp_pkt.payload)
-            log.info(f"TCP Payload: {payload}")
-            cip_latency_tracker[session_id] = time.time()
-            if len(payload) >= 24:  # ENIP Header có ít nhất 24 bytes
-                 command = int.from_bytes(payload[0:2], byteorder='little')
-                 session = int.from_bytes(payload[4:8], byteorder='little')
-                 log.info(f"ENIP Command: {hex(command)}, Session Handle: {session}")
+        latency = 0
+        if tcp_pkt:
+            if tcp_pkt.dstport == 44818:
+                log.info(f"ENIP Packet Detected: src_port={tcp_pkt.srcport}, dst_port={tcp_pkt.dstport}")
+                session_id = f"{ip_pkt.srcip}.{ip_pkt.dstip}.{tcp_pkt.srcport}"
+                payload = bytes(tcp_pkt.payload)
+                log.info(f"TCP Payload: {payload}")
+                cip_latency_tracker[session_id] = time.time()
+            if tcp_pkt.srcport == 44818:
+                log.info(f"ENIP Packet Detected: src_port={tcp_pkt.srcport}, dst_port={tcp_pkt.dstport}")
+                session_id = f"{ip_pkt.dstip}.{ip_pkt.srcip}.{tcp_pkt.dstport}"
+                current_time = time.time()
+                if session_id in cip_latency_tracker:
+                    previous_time = cip_latency_tracker[session_id]
+                    latency = current_time - previous_time
+                    log.info("============================================================")
+                    log.info(f"[CIP] Session {session_id} - Latency: {latency:.6f} seconds")
+                    del cip_latency_tracker[session_id]
 
-                    # CIP Payload (sau header 24 bytes)
-                 cip_payload = payload[24:]
-                 if cip_payload:
-                    log.info(f"CIP Data: {cip_payload.hex()}")  # In ra dạng hex
-                    current_time = time.time()
-                    if session_id in cip_latency_tracker:
-                        previous_time = cip_latency_tracker[session_id]
-                        latency = current_time - previous_time
-                        log.info(f"[CIP] Session {session_id} - Latency: {latency:.6f} seconds")
-                    
-
-                    # Cập nhật timestamp
-                    cip_latency_tracker[session_id] = current_time
+        now = time.time()
+        for sid in list(cip_latency_tracker):
+            if now - cip_latency_tracker[sid] > 10:
+                del cip_latency_tracker[sid]
 
         # Cập nhật thống kê băng thông
         bw = 0
@@ -149,7 +148,7 @@ class AntiARPCachePoisoning (object):
                     bw = (pkt_len * 8) / time_diff  # băng thông tính bằng bit/s
                     log.info(f"[Bandwidth] {conn_key[0]} -> {conn_key[1]}: {bw:.2f} bps")
                 bandwidth_tracker[conn_key] = [pkt_len, now]
-                
+
         if ip_pkt:
             metrics = {
                 "srcip": str(ip_pkt.srcip),
