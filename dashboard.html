@@ -89,29 +89,29 @@
 
             if (metricMap[key]) {
               const prev = metricMap[key];
-              var deltaLatency = ((latency - prev.latency) / prev.latency * 100).toFixed(1);
-              const deltaBW = ((bandwidth - prev.bandwidth) / prev.bandwidth * 100).toFixed(1);
+              var deltaLatency
+              if (latency != 0){
+                deltaLatency = ((latency - prev.latency) / prev.latency * 100).toFixed(1);
+                metricMap[key].latency = latency;
+              }
+
+              var deltaBW
+              if (bandwidth !=0){
+                deltaBW = ((bandwidth - prev.bandwidth) / prev.bandwidth * 100).toFixed(1);
+                metricMap[key].bandwidth = bandwidth;
+              }
+               
               const row = prev.row;
               
-              if(latency == 0){
-                row.cells[0].innerText = timestamp;
-                row.cells[2].innerText = latency;
-                row.cells[3].innerText = `0%`;
-                row.cells[4].innerText = bandwidth;
-                row.cells[5].innerText = `${deltaBW}%`;
-              }else{
-                row.cells[0].innerText = timestamp;
+              if(latency != 0){
                 row.cells[2].innerText = latency;
                 row.cells[3].innerText = `${deltaLatency}%`;
+              }
+              if(bandwidth != 0){
                 row.cells[4].innerText = bandwidth;
                 row.cells[5].innerText = `${deltaBW}%`;
               }
-
               row.cells[0].innerText = timestamp;
-              row.cells[2].innerText = latency;
-              row.cells[3].innerText = `${deltaLatency}%`;
-              row.cells[4].innerText = bandwidth;
-              row.cells[5].innerText = `${deltaBW}%`;
 
               if (Math.abs(deltaLatency) > 50 || Math.abs(deltaBW) > 50) {
                 const warning = document.createElement("li");
@@ -119,8 +119,6 @@
                 warningList.appendChild(warning);
               }
 
-              metricMap[key].latency = latency;
-              metricMap[key].bandwidth = bandwidth;
             } else {
               const row = table.insertRow();
               row.insertCell().innerText = timestamp;
