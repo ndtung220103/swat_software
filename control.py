@@ -145,7 +145,10 @@ class AntiARPCachePoisoning (object):
                     previous_time = cip_latency_tracker[session_id]
                     latency = current_time - previous_time
                     key = (str(ip_pkt.dstip), str(ip_pkt.srcip))
+                    key_down = (str(ip_pkt.srcip), str(ip_pkt.dstip))
                     latency_list[key] = latency
+                    latency_list[key_down] = latency
+
                     log.info("============================================================")
                     log.info(f"[CIP] Session {session_id} - Latency: {latency:.6f} seconds")
                     metrics = {
