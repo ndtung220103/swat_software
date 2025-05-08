@@ -19,6 +19,8 @@ VALID_IP_TO_MAC = {
 cip_latency_tracker = {}
 bandwidth_tracker = {}
 sensor_data = {}
+latency_list = {}
+bandwidth_list = {}
 
 def send_metrics_to_dashboard(metrics):
     try:
@@ -110,9 +112,11 @@ class AntiARPCachePoisoning (object):
 
         # Cập nhật thống kê băng thông
         bw = 0
-
+        conn_key = (str(ip_pkt.srcip), str(ip_pkt.dstip))
+        if conn_key not in latency_list:
+            latency_list[conn_key] = 0
+        
         if ip_pkt:
-            conn_key = (str(ip_pkt.srcip), str(ip_pkt.dstip))
             now = time.time()
             pkt_len = len(packet)
 
@@ -123,30 +127,33 @@ class AntiARPCachePoisoning (object):
                 time_diff = now - prev_time
                 if time_diff > 0:
                     bw = (pkt_len * 8) / time_diff  # băng thông tính bằng bit/s
+                    bandwidth_list[conn_key] = bw
                     log.info(f"[Bandwidth] {conn_key[0]} -> {conn_key[1]}: {bw:.2f} bps")
                 bandwidth_tracker[conn_key] = [pkt_len, now]
         latency = 0
         if tcp_pkt:
             if tcp_pkt.dstport == 44818:
                 log.info(f"ENIP Packet Detected: src_port={tcp_pkt.srcport}, dst_port={tcp_pkt.dstport}")
-                session_id = f"{ip_pkt.srcip}.{ip_pkt.dstip}.{tcp_pkt.srcport}"
+                session_id = f"{ip_pkt.srcip},{ip_pkt.dstip},{tcp_pkt.srcport}"
                 payload = bytes(tcp_pkt.payload)
                 log.info(f"TCP Payload: {payload}")
                 cip_latency_tracker[session_id] = time.time()
             if tcp_pkt.srcport == 44818:
                 log.info(f"ENIP Packet Detected: src_port={tcp_pkt.srcport}, dst_port={tcp_pkt.dstport}")
-                session_id = f"{ip_pkt.dstip}.{ip_pkt.srcip}.{tcp_pkt.dstport}"
+                session_id = f"{ip_pkt.dstip},{ip_pkt.srcip},{tcp_pkt.dstport}"
                 current_time = time.time()
                 if session_id in cip_latency_tracker:
                     previous_time = cip_latency_tracker[session_id]
                     latency = current_time - previous_time
+                    key = (str(ip_pkt.dstip), str(ip_pkt.srcip))
+                    latency_list[key] = latency
                     log.info("============================================================")
                     log.info(f"[CIP] Session {session_id} - Latency: {latency:.6f} seconds")
                     metrics = {
                             "srcip": str(ip_pkt.dstip),
                             "dstip": str(ip_pkt.srcip),
                             "latency": latency,
-                            "bandwidth": 0,
+                            "bandwidth": bandwidth_list[key],
                             "timestamp": time.time()
                             }
                     send_metrics_to_dashboard(metrics)
@@ -161,7 +168,7 @@ class AntiARPCachePoisoning (object):
             metrics = {
                 "srcip": str(ip_pkt.srcip),
                 "dstip": str(ip_pkt.dstip),
-                "latency": 0,
+                "latency": latency_list[conn_key],
                 "bandwidth": bw,
                 "timestamp": time.time()
                 }
