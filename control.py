@@ -112,14 +112,13 @@ class AntiARPCachePoisoning (object):
 
         # Cập nhật thống kê băng thông
         bw = 0
-        conn_key = (str(ip_pkt.srcip), str(ip_pkt.dstip))
-        if conn_key not in latency_list:
-            latency_list[conn_key] = 0
         
         if ip_pkt:
             now = time.time()
             pkt_len = len(packet)
-
+            conn_key = (str(ip_pkt.srcip), str(ip_pkt.dstip))
+            if conn_key not in latency_list:
+                latency_list[conn_key] = 0
             if conn_key not in bandwidth_tracker:
                 bandwidth_tracker[conn_key] = [pkt_len, now]
             else:
