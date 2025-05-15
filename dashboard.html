@@ -99,9 +99,10 @@
               row.cells[4].innerText = bandwidth;
               row.cells[5].innerText = `${deltaBW}%`;
 
-              if (Math.abs(deltaLatenc) > 300 || Math.abs(deltaBW) > 200) {
+              if (Math.abs(deltaLatency) > 300 || Math.abs(deltaBW) > 200) {
                 const warning = document.createElement("li");
-                warning.innerText = `[${timestamp}] ALERT ${key}: Latency Δ=${deltaLatency}%, Bandwidth Δ=${deltaBW}%`;
+                warning.innerHTML = `[${timestamp}] ALERT ${key}: Latency Δ=${deltaLatency}%, Bandwidth Δ=${deltaBW}% 
+                  <span style="color:red; cursor:pointer; float:right;" onclick="this.parentElement.remove()">❌</span>`;
                 warningList.appendChild(warning);
               }
 
