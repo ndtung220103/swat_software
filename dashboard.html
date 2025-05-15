@@ -84,13 +84,13 @@
           data.forEach(metric => {
             const key = `${metric.srcip}->${metric.dstip}`;
             const timestamp = new Date(metric.timestamp * 1000).toLocaleTimeString();
-            const deltaLatency = prev.latency == 0 ? 0 : ((latency - prev.latency) / prev.latency * 100).toFixed(7);
-            const deltaBW = prev.bandwidth == 0 ? 0 : ((bandwidth - prev.bandwidth) / prev.bandwidth * 100).toFixed(7);
+            const latency = parseFloat(metric.latency).toFixed(7);
+            const bandwidth = parseFloat(metric.bandwidth).toFixed(7);
 
             if (metricMap[key]) {
               const prev = metricMap[key];
-              const deltaLatency = ((latency - prev.latency) / prev.latency * 100).toFixed(1);
-              const deltaBW = ((bandwidth - prev.bandwidth) / prev.bandwidth * 100).toFixed(1);
+              const deltaLatency = prev.latency == 0 ? 0 : ((latency - prev.latency) / prev.latency * 100).toFixed(1);
+              const deltaBW = prev.bandwidth == 0 ? 0 : ((bandwidth - prev.bandwidth) / prev.bandwidth * 100).toFixed(1);
               const row = prev.row;
 
               row.cells[0].innerText = timestamp;
