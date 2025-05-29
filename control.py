@@ -130,31 +130,31 @@ class AntiARPCachePoisoning (object):
         tcp_pkt = packet.find("tcp")
 
         #arp valid
-        sender_ip = str(packet.payload.protosrc)
-        sender_mac = str(packet.payload.hwsrc)
+        # sender_ip = str(packet.payload.protosrc)
+        # sender_mac = str(packet.payload.hwsrc)
 
-        if sender_ip in VALID_IP_TO_MAC:
-            # Internal attack
-            if sender_mac != VALID_IP_TO_MAC[sender_ip]:
-                # Internal attack
-                if sender_mac in VALID_IP_TO_MAC.values():
-                    for key, value in VALID_IP_TO_MAC.items():
-                        if value == sender_mac:
-                            attacker_ip = key
-                    log("Internal attack")
-                    # log.warning(
-                    #     "%d internal ap detected: %s MAC with %s IP "
-                    #     "tries to impersonate %s IP with %s MAC" % (
-                    #         event.dpid, sender_mac, attacker_ip,
-                    #         sender_ip,  VALID_IP_TO_MAC[sender_ip]))
-                # External attack
-                else:
-                    log("External attack")
-                    # log.warning(
-                    #     "%d external ap detected: %s MAC tries to "
-                    #     "impersonate %s IP with %s MAC" % (
-                    #         event.dpid, sender_mac, sender_ip,
-                    #          VALID_IP_TO_MAC[sender_ip]))
+        # if sender_ip in VALID_IP_TO_MAC:
+        #     # Internal attack
+        #     if sender_mac != VALID_IP_TO_MAC[sender_ip]:
+        #         # Internal attack
+        #         if sender_mac in VALID_IP_TO_MAC.values():
+        #             for key, value in VALID_IP_TO_MAC.items():
+        #                 if value == sender_mac:
+        #                     attacker_ip = key
+        #             log("Internal attack")
+        #             # log.warning(
+        #             #     "%d internal ap detected: %s MAC with %s IP "
+        #             #     "tries to impersonate %s IP with %s MAC" % (
+        #             #         event.dpid, sender_mac, attacker_ip,
+        #             #         sender_ip,  VALID_IP_TO_MAC[sender_ip]))
+        #         # External attack
+        #         else:
+        #             log("External attack")
+        #             # log.warning(
+        #             #     "%d external ap detected: %s MAC tries to "
+        #             #     "impersonate %s IP with %s MAC" % (
+        #             #         event.dpid, sender_mac, sender_ip,
+        #             #          VALID_IP_TO_MAC[sender_ip]))
         # Cập nhật thống kê băng thông
         bw = 0
         
