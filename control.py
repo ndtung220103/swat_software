@@ -228,7 +228,7 @@ class AntiARPCachePoisoning (object):
                 "srcip": str(ip_pkt.srcip),
                 "dstip": str(ip_pkt.dstip),
                 "latency": latency_list[conn_key],
-                "ema_latency": ema_latency[key],
+                "ema_latency": ema_latency[conn_key],
                 "bandwidth": bw,
                 "ema_bandwidth": ema_bandwidth[conn_key],
                 "timestamp": time.time()
