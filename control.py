@@ -11,9 +11,13 @@ log = core.getLogger()
 
 # Danh sách ánh xạ IP-to-MAC hợp lệ
 VALID_IP_TO_MAC = {
-    "192.168.1.10": "00:1d:9c:c7:b0:10",  # plc1
-    "192.168.1.20": "00:1d:9c:c8:bc:20",  # hmi
-    "192.168.1.77": "aa:aa:aa:aa:aa:aa",  # attacker (ví dụ)
+    '192.168.1.10': '00:1D:9C:C7:B0:70',
+    '192.168.1.20': '00:1D:9C:C8:BC:46',
+    '192.168.1.30': '00:1D:9C:C8:BD:F2',
+    '192.168.1.40': '00:1D:9C:C7:FA:2C',
+    '192.168.1.50': '00:1D:9C:C8:BC:2F',
+    '192.168.1.60': '00:1D:9C:C7:FA:2D',
+    '192.168.1.70': '00:1D:9C:C8:BC:70'
 }
 
 cip_latency_tracker = {}
@@ -21,6 +25,9 @@ bandwidth_tracker = {}
 sensor_data = {}
 latency_list = {}
 bandwidth_list = {}
+ema_latency = {}  # Exponential Moving Average - EMA
+ema_bandwidth = {}  
+alpha = 0.3
 
 def send_metrics_to_dashboard(metrics):
     try:
@@ -33,6 +40,18 @@ def send_metrics_to_dashboard(metrics):
             log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
     except Exception as e:
         log.error(f"[DASHBOARD] Exception: {e}")
+
+# def send_mess_to_dashboard(mess):
+#     try:
+#         url = "http://127.0.0.1:5000/mess"
+#         headers = {'Content-Type': 'application/json'}
+#         response = requests.post(url, headers=headers, json=mess)
+#         if response.status_code == 200:
+#             log.info("[DASHBOARD] Sent metrics successfully")
+#         else:
+#             log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
+#     except Exception as e:
+#         log.error(f"[DASHBOARD] Exception: {e}")
 
 def start_udp_server():
     global sensor_data
@@ -110,6 +129,30 @@ class AntiARPCachePoisoning (object):
         # Chỉ xử lý TCP Port 44818 (ENIP)
         tcp_pkt = packet.find("tcp")
 
+        #arp valid
+        sender_ip = str(packet.payload.protosrc)
+        sender_mac = str(packet.payload.hwsrc)
+
+        if sender_ip in VALID_IP_TO_MAC:
+            # Internal attack
+            if sender_mac != VALID_IP_TO_MAC[sender_ip]:
+                # Internal attack
+                if sender_mac in VALID_IP_TO_MAC.values():
+                    for key, value in VALID_IP_TO_MAC.items():
+                        if value == sender_mac:
+                            attacker_ip = key
+                    log.warning(
+                        "%d internal ap detected: %s MAC with %s IP "
+                        "tries to impersonate %s IP with %s MAC" % (
+                            event.dpid, sender_mac, attacker_ip,
+                            sender_ip, self.static_ip_to_mac[sender_ip]))
+                # External attack
+                else:
+                    log.warning(
+                        "%d external ap detected: %s MAC tries to "
+                        "impersonate %s IP with %s MAC" % (
+                            event.dpid, sender_mac, sender_ip,
+                            self.static_ip_to_mac[sender_ip]))
         # Cập nhật thống kê băng thông
         bw = 0
         
@@ -127,6 +170,10 @@ class AntiARPCachePoisoning (object):
                 if time_diff > 0:
                     bw = (pkt_len * 8) / time_diff  # băng thông tính bằng bit/s
                     bandwidth_list[conn_key] = bw
+                    if conn_key not in ema_bandwidth:
+                        ema_bandwidth[conn_key] = bw
+                    else:
+                        ema_bandwidth[conn_key] = alpha * bw + (1 - alpha) * ema_bandwidth[conn_key]
                     log.info(f"[Bandwidth] {conn_key[0]} -> {conn_key[1]}: {bw:.2f} bps")
                 bandwidth_tracker[conn_key] = [pkt_len, now]
         latency = 0
@@ -148,6 +195,12 @@ class AntiARPCachePoisoning (object):
                     key_down = (str(ip_pkt.srcip), str(ip_pkt.dstip))
                     latency_list[key] = latency
                     latency_list[key_down] = latency
+                    if key not in ema_latency:
+                        ema_latency[key] = latency
+                    else:
+                        ema_latency[key] = alpha * latency + (1 - alpha) * ema_latency[key]
+                        ema_latency[key_down] = alpha * latency + (1 - alpha) * ema_latency[key_down]
+
 
                     log.info("============================================================")
                     log.info(f"[CIP] Session {session_id} - Latency: {latency:.6f} seconds")
@@ -155,7 +208,9 @@ class AntiARPCachePoisoning (object):
                             "srcip": str(ip_pkt.dstip),
                             "dstip": str(ip_pkt.srcip),
                             "latency": latency,
+                            "ema_latency": ema_latency[key],
                             "bandwidth": bandwidth_list[key],
+                            "ema_bandwidth": ema_bandwidth[key],
                             "timestamp": time.time()
                             }
                     send_metrics_to_dashboard(metrics)
@@ -171,7 +226,9 @@ class AntiARPCachePoisoning (object):
                 "srcip": str(ip_pkt.srcip),
                 "dstip": str(ip_pkt.dstip),
                 "latency": latency_list[conn_key],
+                "ema_latency": ema_latency[key],
                 "bandwidth": bw,
+                "ema_bandwidth": ema_bandwidth[conn_key],
                 "timestamp": time.time()
                 }
             send_metrics_to_dashboard(metrics)

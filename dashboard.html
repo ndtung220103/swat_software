@@ -62,10 +62,10 @@
           <tr>
             <th>Time</th>
             <th>Src -> Dst</th>
-            <th>Latency (ms)</th>
-            <th>Latency Δ%</th>
-            <th>Bandwidth (Mbps)</th>
-            <th>Bandwidth Δ%</th>
+            <th>Round Trip Latency (ms)</th>
+            <th>EMA_RTL</th>
+            <th>Bit rates (Mbps)</th>
+            <th>EMA_BR</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -86,6 +86,8 @@
             const timestamp = new Date(metric.timestamp * 1000).toLocaleTimeString();
             const latency = parseFloat(metric.latency).toFixed(7);
             const bandwidth = parseFloat(metric.bandwidth).toFixed(7);
+            const ema_latency = parseFloat(metric.ema_latency).toFixed(7);
+            const ema_bandwidth = parseFloat(metric.ema_bandwidth).toFixed(7);
 
             if (metricMap[key]) {
               const prev = metricMap[key];
@@ -95,11 +97,11 @@
 
               row.cells[0].innerText = timestamp;
               row.cells[2].innerText = latency;
-              row.cells[3].innerText = `${deltaLatency}%`;
+              row.cells[3].innerText = ema_latency;
               row.cells[4].innerText = bandwidth;
-              row.cells[5].innerText = `${deltaBW}%`;
+              row.cells[5].innerText = ema_bandwidth;
 
-              if (Math.abs(deltaLatency) > 300 || Math.abs(deltaBW) > 200) {
+              if (Math.abs(deltaLatency) > 300 || Math.abs(deltaBW) > 300) {
                 const warning = document.createElement("li");
                 warning.innerHTML = `[${timestamp}] ALERT ${key}: Latency Δ=${deltaLatency}%, Bandwidth Δ=${deltaBW}% 
                   <span style="color:red; cursor:pointer; float:right;" onclick="this.parentElement.remove()">❌</span>`;
@@ -113,9 +115,9 @@
               row.insertCell().innerText = timestamp;
               row.insertCell().innerText = key;
               row.insertCell().innerText = latency;
-              row.insertCell().innerText = "0%";
+              row.insertCell().innerText = ema_latency;
               row.insertCell().innerText = bandwidth;
-              row.insertCell().innerText = "0%";
+              row.insertCell().innerText = ema_bandwidth;
               metricMap[key] = { row, latency, bandwidth };
             }
           });
