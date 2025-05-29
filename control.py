@@ -141,18 +141,18 @@ class AntiARPCachePoisoning (object):
                     for key, value in VALID_IP_TO_MAC.items():
                         if value == sender_mac:
                             attacker_ip = key
-                    log.warning(
-                        "%d internal ap detected: %s MAC with %s IP "
-                        "tries to impersonate %s IP with %s MAC" % (
-                            event.dpid, sender_mac, attacker_ip,
-                            sender_ip, self.static_ip_to_mac[sender_ip]))
+                    # log.warning(
+                    #     "%d internal ap detected: %s MAC with %s IP "
+                    #     "tries to impersonate %s IP with %s MAC" % (
+                    #         event.dpid, sender_mac, attacker_ip,
+                    #         sender_ip,  VALID_IP_TO_MAC[sender_ip]))
                 # External attack
                 else:
-                    log.warning(
-                        "%d external ap detected: %s MAC tries to "
-                        "impersonate %s IP with %s MAC" % (
-                            event.dpid, sender_mac, sender_ip,
-                            self.static_ip_to_mac[sender_ip]))
+                    # log.warning(
+                    #     "%d external ap detected: %s MAC tries to "
+                    #     "impersonate %s IP with %s MAC" % (
+                    #         event.dpid, sender_mac, sender_ip,
+                    #          VALID_IP_TO_MAC[sender_ip]))
         # Cập nhật thống kê băng thông
         bw = 0
         
