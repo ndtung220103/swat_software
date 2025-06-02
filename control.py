@@ -24,10 +24,7 @@ cip_latency_tracker = {}
 bandwidth_tracker = {}
 sensor_data = {}
 latency_list = {}
-bandwidth_list = {}
-ema_latency = {}  # Exponential Moving Average - EMA
-ema_bandwidth = {}  
-alpha = 0.3
+bandwidth_list = {}  
 
 def send_metrics_to_dashboard(metrics):
     try:
@@ -180,7 +177,10 @@ class AntiARPCachePoisoning (object):
                 session_id = f"{ip_pkt.srcip},{ip_pkt.dstip},{tcp_pkt.srcport}"
                 payload = bytes(tcp_pkt.payload)
                 log.info(f"TCP Payload: {payload}")
-                cip_latency_tracker[session_id] = time.time()
+                if session_id not in cip_latency_tracker:
+                    cip_latency_tracker[session_id] = time.time()
+                else:
+                    log.info(f"======================================= second time")
             if tcp_pkt.srcport == 44818:
                 log.info(f"ENIP Packet Detected: src_port={tcp_pkt.srcport}, dst_port={tcp_pkt.dstport}")
                 session_id = f"{ip_pkt.dstip},{ip_pkt.srcip},{tcp_pkt.dstport}"
@@ -192,9 +192,6 @@ class AntiARPCachePoisoning (object):
                     key_down = (str(ip_pkt.srcip), str(ip_pkt.dstip))
                     latency_list[key] = latency
                     latency_list[key_down] = latency
-
-                    log.info("============================================================")
-                    log.info(f"[CIP] Session {session_id} - Latency: {latency:.6f} seconds")
                     metrics = {
                             "srcip": str(ip_pkt.dstip),
                             "dstip": str(ip_pkt.srcip),
@@ -219,7 +216,7 @@ class AntiARPCachePoisoning (object):
                 "timestamp": time.time()
                 }
             send_metrics_to_dashboard(metrics)
-        log.info("==============================")
+        log.info("====")
         if packet.dst.is_multicast:
             flood()
         else:
