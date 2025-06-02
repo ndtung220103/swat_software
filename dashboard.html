@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Network Dashboard</title>
   <style>
     body {
@@ -16,24 +16,31 @@
     }
     .container {
       display: flex;
-      width: 90%;
-      height: 80vh;
+      width: 95%;
+      height: 90vh;
       box-shadow: 0 0 10px rgba(0,0,0,0.2);
       background: #fff;
       border-radius: 10px;
       overflow: hidden;
     }
     .warnings {
-      width: 30%;
+      width: 25%;
       background: #ffecec;
       border-right: 1px solid #ccc;
       padding: 10px;
       overflow-y: auto;
     }
     .metrics {
-      width: 70%;
+      width: 50%;
       padding: 10px;
       overflow-y: auto;
+      border-right: 1px solid #ccc;
+    }
+    .sensors {
+      width: 25%;
+      padding: 10px;
+      overflow-y: auto;
+      background: #e8f7ff;
     }
     table {
       width: 100%;
@@ -46,6 +53,12 @@
     }
     th {
       background: #eee;
+    }
+    .sensor-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px dashed #ccc;
     }
   </style>
 </head>
@@ -71,75 +84,88 @@
         <tbody></tbody>
       </table>
     </div>
+    <div class="sensors">
+      <h3>Sensor Values</h3>
+      <div id="sensor-values"></div>
+    </div>
   </div>
+
   <script>
-  const table = document.querySelector("#metrics-table tbody");
-  const warningList = document.querySelector("#warnings-list");
-  const metricMap = {};
-  var ema_latency = {};
-  var ema_bandwidth = {};
-  const alpha = 0.2;
+    const table = document.querySelector("#metrics-table tbody");
+    const warningList = document.querySelector("#warnings-list");
+    const sensorDiv = document.querySelector("#sensor-values");
+    const metricMap = {};
+    let ema_latency = {};
+    let ema_bandwidth = {};
+    const alpha = 0.2;
 
-  function fetchData() {
-    fetch("http://127.0.0.1:5000/metrics")
-      .then(res => res.json())
-      .then(data => {
-        data.forEach(metric => {
-          const key = `${metric.srcip}->${metric.dstip}`;
-          const timestamp = new Date(metric.timestamp * 1000).toLocaleTimeString();
-          const latency = parseFloat(metric.latency);
-          const bandwidth = parseFloat(metric.bandwidth);
+    function fetchMetrics() {
+      fetch("http://127.0.0.1:5000/metrics")
+        .then(res => res.json())
+        .then(data => {
+          data.forEach(metric => {
+            const key = `${metric.srcip}->${metric.dstip}`;
+            const timestamp = new Date(metric.timestamp * 1000).toLocaleTimeString();
+            const latency = parseFloat(metric.latency);
+            const bandwidth = parseFloat(metric.bandwidth);
 
-          // EMA computation
-          if (!ema_latency[key]) {
-            ema_latency[key] = latency;
-          } else {
-            ema_latency[key] = alpha * latency + (1 - alpha) * ema_latency[key];
-          }
+            // EMA calculations
+            if (!ema_latency[key]) ema_latency[key] = latency;
+            else ema_latency[key] = alpha * latency + (1 - alpha) * ema_latency[key];
 
-          if (!ema_bandwidth[key]) {
-            ema_bandwidth[key] = bandwidth;
-          } else {
-            ema_bandwidth[key] = alpha * bandwidth + (1 - alpha) * ema_bandwidth[key];
-          }
+            if (!ema_bandwidth[key]) ema_bandwidth[key] = bandwidth;
+            else ema_bandwidth[key] = alpha * bandwidth + (1 - alpha) * ema_bandwidth[key];
 
-          const emaLat = ema_latency[key].toFixed(4);
-          const emaBw = ema_bandwidth[key].toFixed(4);
+            const emaLat = ema_latency[key].toFixed(4);
+            const emaBw = ema_bandwidth[key].toFixed(4);
 
-          if (metricMap[key]) {
-            const row = metricMap[key].row;
-            row.cells[0].innerText = timestamp;
-            row.cells[2].innerText = latency.toFixed(4);
-            row.cells[3].innerText = emaLat;
-            row.cells[4].innerText = bandwidth.toFixed(4);
-            row.cells[5].innerText = emaBw;
+            if (metricMap[key]) {
+              const row = metricMap[key].row;
+              row.cells[0].innerText = timestamp;
+              row.cells[2].innerText = latency.toFixed(4);
+              row.cells[3].innerText = emaLat;
+              row.cells[4].innerText = bandwidth.toFixed(4);
+              row.cells[5].innerText = emaBw;
 
-            // Cảnh báo nếu EMA vượt ngưỡng
-            if (emaLat > 300 || emaBw > 3000) {
-              const warning = document.createElement("li");
-              warning.innerHTML = `[${timestamp}] ALERT ${key}: EMA_Latency=${emaLat}, EMA_Bandwidth=${emaBw} 
-                <span style="color:red; cursor:pointer; float:right;" onclick="this.parentElement.remove()">❌</span>`;
-              warningList.appendChild(warning);
+              if (emaLat > 300 || emaBw > 7000) {
+                const warning = document.createElement("li");
+                warning.innerHTML = `[${timestamp}] ALERT ${key}: EMA_Latency=${emaLat}, EMA_Bandwidth=${emaBw} 
+                  <span style="color:red; cursor:pointer; float:right;" onclick="this.parentElement.remove()">❌</span>`;
+                warningList.appendChild(warning);
+              }
+
+              metricMap[key].latency = latency;
+              metricMap[key].bandwidth = bandwidth;
+            } else {
+              const row = table.insertRow();
+              row.insertCell().innerText = timestamp;
+              row.insertCell().innerText = key;
+              row.insertCell().innerText = latency.toFixed(4);
+              row.insertCell().innerText = emaLat;
+              row.insertCell().innerText = bandwidth.toFixed(4);
+              row.insertCell().innerText = emaBw;
+              metricMap[key] = { row, latency, bandwidth };
             }
-
-            metricMap[key].latency = latency;
-            metricMap[key].bandwidth = bandwidth;
-          } else {
-            const row = table.insertRow();
-            row.insertCell().innerText = timestamp;
-            row.insertCell().innerText = key;
-            row.insertCell().innerText = latency.toFixed(4);
-            row.insertCell().innerText = emaLat;
-            row.insertCell().innerText = bandwidth.toFixed(4);
-            row.insertCell().innerText = emaBw;
-            metricMap[key] = { row, latency, bandwidth };
-          }
+          });
         });
-      });
-  }
+    }
 
-  setInterval(fetchData, 1000); // Refresh every 1 seconds
-</script>
+    function fetchSensors() {
+      fetch("http://127.0.0.1:5000/sensors")
+        .then(res => res.json())
+        .then(data => {
+          sensorDiv.innerHTML = ''; // Clear previous
+          Object.entries(data).forEach(([key, value]) => {
+            const item = document.createElement('div');
+            item.className = 'sensor-item';
+            item.innerHTML = `<span>${key}</span><span>${value}</span>`;
+            sensorDiv.appendChild(item);
+          });
+        });
+    }
 
+    setInterval(fetchMetrics, 1000);
+    setInterval(fetchSensors, 1000);
+  </script>
 </body>
 </html>
