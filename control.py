@@ -210,9 +210,9 @@ class AntiARPCachePoisoning (object):
                             "srcip": str(ip_pkt.dstip),
                             "dstip": str(ip_pkt.srcip),
                             "latency": latency,
-                            "ema_latency": ema_latency[key],
-                            "bandwidth": bandwidth_list[key],
-                            "ema_bandwidth": ema_bandwidth[key],
+                            "ema_latency": ema_latency.get(key,0),
+                            "bandwidth": bandwidth_list.get(key,0),
+                            "ema_bandwidth": ema_bandwidth.get(key,0),
                             "timestamp": time.time()
                             }
                     send_metrics_to_dashboard(metrics)
@@ -227,10 +227,10 @@ class AntiARPCachePoisoning (object):
             metrics = {
                 "srcip": str(ip_pkt.srcip),
                 "dstip": str(ip_pkt.dstip),
-                "latency": latency_list[conn_key],
-                "ema_latency": ema_latency[conn_key],
+                "latency": latency_list.get(conn_key,0),
+                "ema_latency": ema_latency.get(conn_key,0),
                 "bandwidth": bw,
-                "ema_bandwidth": ema_bandwidth[conn_key],
+                "ema_bandwidth": ema_bandwidth.get(conn_key,0),
                 "timestamp": time.time()
                 }
             send_metrics_to_dashboard(metrics)
