@@ -14,7 +14,7 @@ def receive_metrics():
     data_store[key] = data
     return jsonify({"status": "ok"}), 200
 
-@app.route('/sensors', methods=['GET'])
+@app.route('/metrics', methods=['GET'])
 def get_metrics():
     return jsonify(list(data_store.values()))  
 
@@ -27,7 +27,7 @@ def receive_sensors():
 
 @app.route('/sensors', methods=['GET'])
 def get_sensors():
-    return jsonify(sensor_value.values())  
+    return jsonify(sensor_value)  
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
