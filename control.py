@@ -172,11 +172,6 @@ class AntiARPCachePoisoning (object):
                 if time_diff > 0:
                     bw = (pkt_len * 8) / time_diff  # băng thông tính bằng bit/s
                     bandwidth_list[conn_key] = bw
-                    if conn_key not in ema_bandwidth:
-                        ema_bandwidth[conn_key] = bw
-                    else:
-                        ema_bandwidth[conn_key] = alpha * bw + (1 - alpha) * ema_bandwidth[conn_key]
-                    log.info(f"[Bandwidth] {conn_key[0]} -> {conn_key[1]}: {bw:.2f} bps")
                 bandwidth_tracker[conn_key] = [pkt_len, now]
         latency = 0
         if tcp_pkt:
@@ -197,12 +192,6 @@ class AntiARPCachePoisoning (object):
                     key_down = (str(ip_pkt.srcip), str(ip_pkt.dstip))
                     latency_list[key] = latency
                     latency_list[key_down] = latency
-                    if key not in ema_latency:
-                        ema_latency[key] = latency
-                    else:
-                        ema_latency[key] = alpha * latency + (1 - alpha) * ema_latency[key]
-                        ema_latency[key_down] = alpha * latency + (1 - alpha) * ema_latency[key_down]
-
 
                     log.info("============================================================")
                     log.info(f"[CIP] Session {session_id} - Latency: {latency:.6f} seconds")
@@ -210,9 +199,7 @@ class AntiARPCachePoisoning (object):
                             "srcip": str(ip_pkt.dstip),
                             "dstip": str(ip_pkt.srcip),
                             "latency": latency,
-                            "ema_latency": ema_latency.get(key,0),
                             "bandwidth": bandwidth_list.get(key,0),
-                            "ema_bandwidth": ema_bandwidth.get(key,0),
                             "timestamp": time.time()
                             }
                     send_metrics_to_dashboard(metrics)
@@ -228,9 +215,7 @@ class AntiARPCachePoisoning (object):
                 "srcip": str(ip_pkt.srcip),
                 "dstip": str(ip_pkt.dstip),
                 "latency": latency_list.get(conn_key,0),
-                "ema_latency": ema_latency.get(conn_key,0),
                 "bandwidth": bw,
-                "ema_bandwidth": ema_bandwidth.get(conn_key,0),
                 "timestamp": time.time()
                 }
             send_metrics_to_dashboard(metrics)
