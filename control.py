@@ -31,10 +31,10 @@ def send_metrics_to_dashboard(metrics):
         url = "http://127.0.0.1:5000/metrics"
         headers = {'Content-Type': 'application/json'}
         response = requests.post(url, headers=headers, json=metrics)
-        if response.status_code == 200:
-            log.info("[DASHBOARD] Sent metrics successfully")
-        else:
-            log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
+        # if response.status_code == 200:
+        #     log.info("[DASHBOARD] Sent metrics successfully")
+        # else:
+        #     log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
     except Exception as e:
         log.error(f"[DASHBOARD] Exception: {e}")
 
@@ -43,10 +43,10 @@ def send_sensors_to_dashboard(sensors):
         url = "http://127.0.0.1:5000/sensors"
         headers = {'Content-Type': 'application/json'}
         response = requests.post(url, headers=headers, json=sensors)
-        if response.status_code == 200:
-            log.info("[DASHBOARD] Sent metrics successfully")
-        else:
-            log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
+        # if response.status_code == 200:
+        #     log.info("[DASHBOARD] Sent metrics successfully")
+        # else:
+        #     log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
     except Exception as e:
         log.error(f"[DASHBOARD] Exception: {e}")
 # def send_mess_to_dashboard(mess):

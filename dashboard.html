@@ -44,8 +44,7 @@
       background: #e8f7ff;
     }
     #h3-sensor{
-      color: red;
-      margin-bottom: 30px;
+      margin-bottom: 80px;
     }
     table {
       width: 100%;
@@ -102,7 +101,9 @@
     const metricMap = {};
     let ema_latency = {};
     let ema_bandwidth = {};
-    const alpha = 0.2;
+
+    const alertedKeys = new Set();
+    const alpha = 0.1;
 
     function fetchMetrics() {
       fetch("http://127.0.0.1:5000/metrics")
@@ -133,10 +134,13 @@
               row.cells[5].innerText = emaBw;
 
               if (emaLat > 300 || emaBw > 7000) {
-                const warning = document.createElement("li");
-                warning.innerHTML = `[${timestamp}] ALERT ${key}: EMA_Latency=${emaLat}, EMA_Bandwidth=${emaBw} 
-                  <span style="color:red; cursor:pointer; float:right;" onclick="this.parentElement.remove()">❌</span>`;
-                warningList.appendChild(warning);
+                if(alertedKeys.has(key)){
+                  const warning = document.createElement("li");
+                  warning.innerHTML = `[${timestamp}] ALERT ${key}: EMA_Latency=${emaLat}, EMA_Bandwidth=${emaBw}
+                    <span style="color:red; cursor:pointer; float:right;" onclick="removeWarning(this, '${key}')">❌</span>`;
+                  warningList.appendChild(warning);
+                  alertedKeys.add(key);
+                }
               }
 
               metricMap[key].latency = latency;
@@ -159,7 +163,7 @@
       fetch("http://127.0.0.1:5000/sensors")
         .then(res => res.json())
         .then(data => {
-          sensorDiv.innerHTML = ''; // Clear previous
+          sensorDiv.innerHTML = '';
           Object.entries(data).forEach(([key, value]) => {
             const item = document.createElement('div');
             item.className = 'sensor-item';
@@ -169,6 +173,10 @@
         });
     }
 
+    function removeWarning(span, key) {
+      span.parentElement.remove();
+      alertedKeys.delete(key);
+    }
     setInterval(fetchMetrics, 1000);
     setInterval(fetchSensors, 1000);
   </script>

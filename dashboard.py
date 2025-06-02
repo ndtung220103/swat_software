@@ -12,7 +12,7 @@ def receive_metrics():
     data = request.get_json()
     key = f"{data['srcip']}->{data['dstip']}"
     data_store[key] = data
-    return jsonify({"status": "ok"}), 200
+    return 
 
 @app.route('/metrics', methods=['GET'])
 def get_metrics():
@@ -22,8 +22,8 @@ def get_metrics():
 def receive_sensors():
     data = request.get_json()
     sensor_value.update(data)
-    print(f"[RECEIVED] {data}")
-    return jsonify({"status": "ok"}), 200
+    return
+    # return jsonify({"status": "ok"}), 200
 
 @app.route('/sensors', methods=['GET'])
 def get_sensors():
