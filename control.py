@@ -114,13 +114,9 @@ class AntiARPCachePoisoning (object):
 
         
         eth = packet.find("ethernet")
-        if eth:
-            log.info(f"Ethernet: src={eth.src}, dst={eth.dst}, type={hex(eth.type)}")
 
         # IPv4 Layer
         ip_pkt = packet.find("ipv4")
-        if ip_pkt:
-            log.info(f"IPv4: src={ip_pkt.srcip}, dst={ip_pkt.dstip}, proto={ip_pkt.protocol}")
 
         latency = 0
         # Chỉ xử lý TCP Port 44818 (ENIP)
@@ -221,7 +217,7 @@ class AntiARPCachePoisoning (object):
             flood()
         else:
             if packet.dst not in self.macToPort:
-                flood("Port from %s unknown -- flooding" % (packet.dst))
+                flood()
             else:
                 port = self.macToPort[packet.dst]
                 if port == event.port:
