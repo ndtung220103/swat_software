@@ -73,58 +73,73 @@
     </div>
   </div>
   <script>
-    const table = document.querySelector("#metrics-table tbody");
-    const warningList = document.querySelector("#warnings-list");
-    const metricMap = {};
+  const table = document.querySelector("#metrics-table tbody");
+  const warningList = document.querySelector("#warnings-list");
+  const metricMap = {};
+  var ema_latency = {};
+  var ema_bandwidth = {};
+  const alpha = 0.3;
 
-    function fetchData() {
-      fetch("http://127.0.0.1:5000/metrics")
-        .then(res => res.json())
-        .then(data => {
-          data.forEach(metric => {
-            const key = `${metric.srcip}->${metric.dstip}`;
-            const timestamp = new Date(metric.timestamp * 1000).toLocaleTimeString();
-            const latency = parseFloat(metric.latency).toFixed(7);
-            const bandwidth = parseFloat(metric.bandwidth).toFixed(7);
-            const ema_latency = parseFloat(metric.ema_latency).toFixed(7);
-            const ema_bandwidth = parseFloat(metric.ema_bandwidth).toFixed(7);
+  function fetchData() {
+    fetch("http://127.0.0.1:5000/metrics")
+      .then(res => res.json())
+      .then(data => {
+        data.forEach(metric => {
+          const key = `${metric.srcip}->${metric.dstip}`;
+          const timestamp = new Date(metric.timestamp * 1000).toLocaleTimeString();
+          const latency = parseFloat(metric.latency);
+          const bandwidth = parseFloat(metric.bandwidth);
 
-            if (metricMap[key]) {
-              const prev = metricMap[key];
-              const deltaLatency = prev.latency == 0 ? 0 : ((latency - prev.latency) / prev.latency * 100).toFixed(1);
-              const deltaBW = prev.bandwidth == 0 ? 0 : ((bandwidth - prev.bandwidth) / prev.bandwidth * 100).toFixed(1);
-              const row = prev.row;
+          // EMA computation
+          if (!ema_latency[key]) {
+            ema_latency[key] = latency;
+          } else {
+            ema_latency[key] = alpha * latency + (1 - alpha) * ema_latency[key];
+          }
 
-              row.cells[0].innerText = timestamp;
-              row.cells[2].innerText = latency;
-              row.cells[3].innerText = ema_latency;
-              row.cells[4].innerText = bandwidth;
-              row.cells[5].innerText = ema_bandwidth;
+          if (!ema_bandwidth[key]) {
+            ema_bandwidth[key] = bandwidth;
+          } else {
+            ema_bandwidth[key] = alpha * bandwidth + (1 - alpha) * ema_bandwidth[key];
+          }
 
-              if (Math.abs(deltaLatency) > 300 || Math.abs(deltaBW) > 300) {
-                const warning = document.createElement("li");
-                warning.innerHTML = `[${timestamp}] ALERT ${key}: Latency Δ=${deltaLatency}%, Bandwidth Δ=${deltaBW}% 
-                  <span style="color:red; cursor:pointer; float:right;" onclick="this.parentElement.remove()">❌</span>`;
-                warningList.appendChild(warning);
-              }
+          const emaLat = ema_latency[key].toFixed(4);
+          const emaBw = ema_bandwidth[key].toFixed(4);
 
-              metricMap[key].latency = latency;
-              metricMap[key].bandwidth = bandwidth;
-            } else {
-              const row = table.insertRow();
-              row.insertCell().innerText = timestamp;
-              row.insertCell().innerText = key;
-              row.insertCell().innerText = latency;
-              row.insertCell().innerText = ema_latency;
-              row.insertCell().innerText = bandwidth;
-              row.insertCell().innerText = ema_bandwidth;
-              metricMap[key] = { row, latency, bandwidth };
+          if (metricMap[key]) {
+            const row = metricMap[key].row;
+            row.cells[0].innerText = timestamp;
+            row.cells[2].innerText = latency.toFixed(4);
+            row.cells[3].innerText = emaLat;
+            row.cells[4].innerText = bandwidth.toFixed(4);
+            row.cells[5].innerText = emaBw;
+
+            // Cảnh báo nếu EMA vượt ngưỡng
+            if (emaLat > 300 || emaBw > 300) {
+              const warning = document.createElement("li");
+              warning.innerHTML = `[${timestamp}] ALERT ${key}: EMA_Latency=${emaLat}, EMA_Bandwidth=${emaBw} 
+                <span style="color:red; cursor:pointer; float:right;" onclick="this.parentElement.remove()">❌</span>`;
+              warningList.appendChild(warning);
             }
-          });
-        });
-    }
 
-    setInterval(fetchData, 2000); // Refresh every 2 seconds
-  </script>
+            metricMap[key].latency = latency;
+            metricMap[key].bandwidth = bandwidth;
+          } else {
+            const row = table.insertRow();
+            row.insertCell().innerText = timestamp;
+            row.insertCell().innerText = key;
+            row.insertCell().innerText = latency.toFixed(4);
+            row.insertCell().innerText = emaLat;
+            row.insertCell().innerText = bandwidth.toFixed(4);
+            row.insertCell().innerText = emaBw;
+            metricMap[key] = { row, latency, bandwidth };
+          }
+        });
+      });
+  }
+
+  setInterval(fetchData, 2000); // Refresh every 2 seconds
+</script>
+
 </body>
 </html>
