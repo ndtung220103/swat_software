@@ -78,7 +78,7 @@
   const metricMap = {};
   var ema_latency = {};
   var ema_bandwidth = {};
-  const alpha = 0.3;
+  const alpha = 0.2;
 
   function fetchData() {
     fetch("http://127.0.0.1:5000/metrics")
@@ -115,7 +115,7 @@
             row.cells[5].innerText = emaBw;
 
             // Cảnh báo nếu EMA vượt ngưỡng
-            if (emaLat > 300 || emaBw > 300) {
+            if (emaLat > 300 || emaBw > 3000) {
               const warning = document.createElement("li");
               warning.innerHTML = `[${timestamp}] ALERT ${key}: EMA_Latency=${emaLat}, EMA_Bandwidth=${emaBw} 
                 <span style="color:red; cursor:pointer; float:right;" onclick="this.parentElement.remove()">❌</span>`;
