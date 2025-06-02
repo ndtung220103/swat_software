@@ -38,6 +38,17 @@ def send_metrics_to_dashboard(metrics):
     except Exception as e:
         log.error(f"[DASHBOARD] Exception: {e}")
 
+def send_sensors_to_dashboard(sensors):
+    try:
+        url = "http://127.0.0.1:5000/sensors"
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(url, headers=headers, json=sensors)
+        if response.status_code == 200:
+            log.info("[DASHBOARD] Sent metrics successfully")
+        else:
+            log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
+    except Exception as e:
+        log.error(f"[DASHBOARD] Exception: {e}")
 # def send_mess_to_dashboard(mess):
 #     try:
 #         url = "http://127.0.0.1:5000/mess"
@@ -61,7 +72,7 @@ def start_udp_server():
             data, addr = sock.recvfrom(8192)
             decoded = data.decode()
             sensor_data = json.loads(decoded)
-            log.info(f"[HMI-UDP] From {addr}: {sensor_data}")
+            send_sensors_to_dashboard(sensor_data)
         except Exception as e:
             log.error(f"[HMI-UDP] Error: {e}")
 
