@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Network Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f4f4f4;
+    }
+    .container {
+      display: flex;
+      width: 90%;
+      height: 80vh;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .warnings {
+      width: 30%;
+      background: #ffecec;
+      border-right: 1px solid #ccc;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    .metrics {
+      width: 70%;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background: #eee;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="warnings">
+      <h3>Warnings</h3>
+      <ul id="warnings-list"></ul>
+    </div>
+    <div class="metrics">
+      <h3>Network Metrics</h3>
+      <table id="metrics-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Src -> Dst</th>
+            <th>Round Trip Latency (ms)</th>
+            <th>EMA_RTL</th>
+            <th>Bit rates (Mbps)</th>
+            <th>EMA_BR</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+  const table = document.querySelector("#metrics-table tbody");
+  const warningList = document.querySelector("#warnings-list");
+  const metricMap = {};
+
+  const ema_latency = {};
+  const ema_bandwidth = {};
+  const ema_latency_list = {};
+  const ema_bandwidth_list = {};
+  const ema_latency_avg = {};
+  const ema_bandwidth_avg = {};
+  const alertedKeys = new Set();
+
+  const alpha = 0.2;
+
+  function fetchData() {
+    fetch("http://127.0.0.1:5000/metrics")
+      .then(res => res.json())
+      .then(data => {
+        data.forEach(metric => {
+          const key = `${metric.srcip}->${metric.dstip}`;
+          const timestamp = new Date(metric.timestamp * 1000).toLocaleTimeString();
+          const latency = parseFloat(metric.latency);
+          const bandwidth = parseFloat(metric.bandwidth);
+
+          // EMA calculation
+          if (!(key in ema_latency)) ema_latency[key] = latency;
+          else ema_latency[key] = alpha * latency + (1 - alpha) * ema_latency[key];
+
+          if (!(key in ema_bandwidth)) ema_bandwidth[key] = bandwidth;
+          else ema_bandwidth[key] = alpha * bandwidth + (1 - alpha) * ema_bandwidth[key];
+
+          const emaLat = parseFloat(ema_latency[key].toFixed(4));
+          const emaBw = parseFloat(ema_bandwidth[key].toFixed(4));
+
+          // Lưu 5 giá trị EMA đầu tiên
+          if (!ema_latency_list[key]) ema_latency_list[key] = [];
+          if (!ema_bandwidth_list[key]) ema_bandwidth_list[key] = [];
+
+          if (ema_latency_list[key].length < 5) ema_latency_list[key].push(emaLat);
+          if (ema_bandwidth_list[key].length < 5) ema_bandwidth_list[key].push(emaBw);
+
+          if (ema_latency_list[key].length === 5 && !ema_latency_avg[key]) {
+            ema_latency_avg[key] = ema_latency_list[key].reduce((a, b) => a + b, 0) / 5;
+          }
+
+          if (ema_bandwidth_list[key].length === 5 && !ema_bandwidth_avg[key]) {
+            ema_bandwidth_avg[key] = ema_bandwidth_list[key].reduce((a, b) => a + b, 0) / 5;
+          }
+
+          // Hiển thị vào bảng
+          if (metricMap[key]) {
+            const row = metricMap[key].row;
+            row.cells[0].innerText = timestamp;
+            row.cells[2].innerText = emaLat.toFixed(4);
+            row.cells[3].innerText = emaLat.toFixed(4);
+            row.cells[4].innerText = emaBw.toFixed(4);
+            row.cells[5].innerText = emaBw.toFixed(4);
+          } else {
+            const row = table.insertRow();
+            row.insertCell().innerText = timestamp;
+            row.insertCell().innerText = key;
+            row.insertCell().innerText = latency.toFixed(4);
+            row.insertCell().innerText = emaLat.toFixed(4);
+            row.insertCell().innerText = bandwidth.toFixed(4);
+            row.insertCell().innerText = emaBw.toFixed(4);
+            metricMap[key] = { row };
+          }
+
+          // Chỉ cảnh báo sau khi có đủ 5 giá trị EMA
+          const hasThreshold = ema_latency_avg[key] && ema_bandwidth_avg[key];
+          const latencyExceeded = emaLat > 1.5 * ema_latency_avg[key];
+          const bandwidthExceeded = emaBw > 4 * ema_bandwidth_avg[key];
+
+          if (hasThreshold && (latencyExceeded || bandwidthExceeded) && !alertedKeys.has(key)) {
+            const warning = document.createElement("li");
+            warning.innerHTML = `[${timestamp}] ALERT ${key}: EMA_Latency=${emaLat}, EMA_Bandwidth=${emaBw}
+              <span style="color:red; cursor:pointer; float:right;" onclick="removeWarning(this, '${key}')">❌</span>`;
+            warningList.appendChild(warning);
+            alertedKeys.add(key);
+          }
+        });
+      });
+  }
+
+  function removeWarning(span, key) {
+    span.parentElement.remove();
+    alertedKeys.delete(key);
+  }
+
+  setInterval(fetchData, 1000);
+</script>
+
+</body>
+</html>

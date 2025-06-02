@@ -169,16 +169,14 @@ class AntiARPCachePoisoning (object):
         latency = 0
         if tcp_pkt:
             if tcp_pkt.dstport == 44818:
-                log.info(f"ENIP Packet Detected: src_port={tcp_pkt.srcport}, dst_port={tcp_pkt.dstport}")
+                # log.info(f"ENIP Packet Detected: src_port={tcp_pkt.srcport}, dst_port={tcp_pkt.dstport}")
                 session_id = f"{ip_pkt.srcip},{ip_pkt.dstip},{tcp_pkt.srcport}"
                 payload = bytes(tcp_pkt.payload)
-                log.info(f"TCP Payload: {payload}")
+                # log.info(f"TCP Payload: {payload}")
                 if session_id not in cip_latency_tracker:
                     cip_latency_tracker[session_id] = time.time()
-                else:
-                    log.info(f"======================================= second time")
             if tcp_pkt.srcport == 44818:
-                log.info(f"ENIP Packet Detected: src_port={tcp_pkt.srcport}, dst_port={tcp_pkt.dstport}")
+                # log.info(f"ENIP Packet Detected: src_port={tcp_pkt.srcport}, dst_port={tcp_pkt.dstport}")
                 session_id = f"{ip_pkt.dstip},{ip_pkt.srcip},{tcp_pkt.dstport}"
                 current_time = time.time()
                 if session_id in cip_latency_tracker:
@@ -212,7 +210,6 @@ class AntiARPCachePoisoning (object):
                 "timestamp": time.time()
                 }
             send_metrics_to_dashboard(metrics)
-        log.info("====")
         if packet.dst.is_multicast:
             flood()
         else:
@@ -225,8 +222,6 @@ class AntiARPCachePoisoning (object):
                             % (packet.src, packet.dst, port))
                     drop()
                     return
-                log.debug("installing flow for %s.%i -> %s.%i"
-                    % (packet.src, event.port, packet.dst, port))
                 msg = of.ofp_flow_mod()
                 msg.match = of.ofp_match.from_packet(packet, event.port)
                 msg.idle_timeout = 10
