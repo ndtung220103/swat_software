@@ -133,8 +133,8 @@
               row.cells[4].innerText = bandwidth.toFixed(4);
               row.cells[5].innerText = emaBw;
 
-              if (emaLat > 1.3 || emaBw > 30000) {
-                if(alertedKeys.has(key)){
+              if (emaLat > 0.01 || emaBw > 50000) {
+                if(!alertedKeys.has(key)){
                   const warning = document.createElement("li");
                   warning.innerHTML = `[${timestamp}] ALERT ${key}: EMA_Latency=${emaLat}, EMA_Bandwidth=${emaBw}
                     <span style="color:red; cursor:pointer; float:right;" onclick="removeWarning(this, '${key}')">❌</span>`;
