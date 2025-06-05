@@ -17,14 +17,11 @@ VALID_IP_TO_MAC = {
     '192.168.1.40': '00:1D:9C:C7:FA:2C',
     '192.168.1.50': '00:1D:9C:C8:BC:2F',
     '192.168.1.60': '00:1D:9C:C7:FA:2D',
-    '192.168.1.70': '00:1D:9C:C8:BC:70'
+    '192.168.1.70': '00:1D:9C:C8:BC:70',
+    '192.168.1.77': 'AA:AA:AA:AA:AA:AA'
 }
 
-cip_latency_tracker = {}
-bandwidth_tracker = {}
-sensor_data = {}
-latency_list = {}
-bandwidth_list = {}  
+sensor_data = {} 
 
 # def send_metrics_to_dashboard(metrics):
 #     try:
@@ -129,32 +126,32 @@ class SwitchHandle (object):
         tcp_pkt = packet.find("tcp")
 
         #arp valid
-        # sender_ip = str(packet.payload.protosrc)
-        # sender_mac = str(packet.payload.hwsrc)
+        if packet.type == eth.ARP_TYPE:
+            sender_ip = str(packet.payload.protosrc)
+            sender_mac = str(packet.payload.hwsrc)
 
-        # if sender_ip in VALID_IP_TO_MAC:
-        #     # Internal attack
-        #     if sender_mac != VALID_IP_TO_MAC[sender_ip]:
-        #         # Internal attack
-        #         if sender_mac in VALID_IP_TO_MAC.values():
-        #             for key, value in VALID_IP_TO_MAC.items():
-        #                 if value == sender_mac:
-        #                     attacker_ip = key
-        #             log("Internal attack")
-        #             # log.warning(
-        #             #     "%d internal ap detected: %s MAC with %s IP "
-        #             #     "tries to impersonate %s IP with %s MAC" % (
-        #             #         event.dpid, sender_mac, attacker_ip,
-        #             #         sender_ip,  VALID_IP_TO_MAC[sender_ip]))
-        #         # External attack
-        #         else:
-        #             log("External attack")
-        #             # log.warning(
-        #             #     "%d external ap detected: %s MAC tries to "
-        #             #     "impersonate %s IP with %s MAC" % (
-        #             #         event.dpid, sender_mac, sender_ip,
-        #             #          VALID_IP_TO_MAC[sender_ip]))
-        # Cập nhật thống kê băng thông
+            if sender_ip in VALID_IP_TO_MAC:
+                # Internal attack
+                if sender_mac != VALID_IP_TO_MAC[sender_ip]:
+                    # Internal attack
+                    if sender_mac in VALID_IP_TO_MAC.values():
+                        for key, value in VALID_IP_TO_MAC.items():
+                            if value == sender_mac:
+                                attacker_ip = key
+                        log("Internal attack")
+                        # log.warning(
+                        #     "%d internal ap detected: %s MAC with %s IP "
+                        #     "tries to impersonate %s IP with %s MAC" % (
+                        #         event.dpid, sender_mac, attacker_ip,
+                        #         sender_ip,  VALID_IP_TO_MAC[sender_ip]))
+                    # External attack
+                    else:
+                        log("External attack")
+                        # log.warning(
+                        #     "%d external ap detected: %s MAC tries to "
+                        #     "impersonate %s IP with %s MAC" % (
+                        #         event.dpid, sender_mac, sender_ip,
+                        #          VALID_IP_TO_MAC[sender_ip]))
         
         if packet.dst.is_multicast:
             flood()
@@ -168,21 +165,29 @@ class SwitchHandle (object):
                             % (packet.src, packet.dst, port))
                     drop()
                     return
-                msg = of.ofp_flow_mod()
-                match = of.ofp_match()
-                if eth:
+                # 
+                if ip_pkt:
+                    msg = of.ofp_flow_mod()
+                    match = of.ofp_match()
                     match.dl_src = eth.src
                     match.dl_dst = eth.dst
-                if ip_pkt:
                     match.nw_src = ip_pkt.srcip
                     match.nw_dst = ip_pkt.dstip
-                # msg.idle_timeout = 10
-                # msg.hard_timeout = 30
-                msg.match = match
-                action = of.ofp_action_output(port=port)
-                msg.actions.append(action)
-                msg.data = event.ofp
-                self.connection.send(msg)
+                    # msg.idle_timeout = 10
+                    # msg.hard_timeout = 30
+                    msg.match = match
+                    action = of.ofp_action_output(port=port)
+                    msg.actions.append(action)
+                    msg.data = event.ofp
+                    self.connection.send(msg)
+                else:
+                    msg = of.ofp_packet_out()
+                    msg.data = event.ofp
+                    msg.in_port = event.port
+                    action = of.ofp_action_output(port=port)
+                    msg.actions.append(action)
+                    self.connection.send(msg)
+
         
 
 def launch():
