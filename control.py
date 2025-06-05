@@ -138,7 +138,7 @@ class SwitchHandle (object):
                         for key, value in VALID_IP_TO_MAC.items():
                             if value == sender_mac:
                                 attacker_ip = key
-                        log("Internal attack")
+                        log.warning("Internal attack")
                         # log.warning(
                         #     "%d internal ap detected: %s MAC with %s IP "
                         #     "tries to impersonate %s IP with %s MAC" % (
@@ -146,7 +146,7 @@ class SwitchHandle (object):
                         #         sender_ip,  VALID_IP_TO_MAC[sender_ip]))
                     # External attack
                     else:
-                        log("External attack")
+                        log.warning("External attack")
                         # log.warning(
                         #     "%d external ap detected: %s MAC tries to "
                         #     "impersonate %s IP with %s MAC" % (
