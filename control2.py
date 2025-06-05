@@ -11,26 +11,55 @@ log = core.getLogger()
 
 # Danh sách ánh xạ IP-to-MAC hợp lệ
 VALID_IP_TO_MAC = {
-    "192.168.1.10": "00:1d:9c:c7:b0:10",  # plc1
-    "192.168.1.20": "00:1d:9c:c8:bc:20",  # hmi
-    "192.168.1.77": "aa:aa:aa:aa:aa:aa",  # attacker (ví dụ)
+    '192.168.1.10': '00:1D:9C:C7:B0:70',
+    '192.168.1.20': '00:1D:9C:C8:BC:46',
+    '192.168.1.30': '00:1D:9C:C8:BD:F2',
+    '192.168.1.40': '00:1D:9C:C7:FA:2C',
+    '192.168.1.50': '00:1D:9C:C8:BC:2F',
+    '192.168.1.60': '00:1D:9C:C7:FA:2D',
+    '192.168.1.70': '00:1D:9C:C8:BC:70'
 }
 
 cip_latency_tracker = {}
 bandwidth_tracker = {}
 sensor_data = {}
+latency_list = {}
+bandwidth_list = {}  
 
 def send_metrics_to_dashboard(metrics):
     try:
         url = "http://127.0.0.1:5000/metrics"
         headers = {'Content-Type': 'application/json'}
         response = requests.post(url, headers=headers, json=metrics)
-        if response.status_code == 200:
-            log.info("[DASHBOARD] Sent metrics successfully")
-        else:
-            log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
+        # if response.status_code == 200:
+        #     log.info("[DASHBOARD] Sent metrics successfully")
+        # else:
+        #     log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
     except Exception as e:
         log.error(f"[DASHBOARD] Exception: {e}")
+
+def send_sensors_to_dashboard(sensors):
+    try:
+        url = "http://127.0.0.1:5000/sensors"
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(url, headers=headers, json=sensors)
+        # if response.status_code == 200:
+        #     log.info("[DASHBOARD] Sent metrics successfully")
+        # else:
+        #     log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
+    except Exception as e:
+        log.error(f"[DASHBOARD] Exception: {e}")
+# def send_mess_to_dashboard(mess):
+#     try:
+#         url = "http://127.0.0.1:5000/mess"
+#         headers = {'Content-Type': 'application/json'}
+#         response = requests.post(url, headers=headers, json=mess)
+#         if response.status_code == 200:
+#             log.info("[DASHBOARD] Sent metrics successfully")
+#         else:
+#             log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
+#     except Exception as e:
+#         log.error(f"[DASHBOARD] Exception: {e}")
 
 def start_udp_server():
     global sensor_data
@@ -43,7 +72,7 @@ def start_udp_server():
             data, addr = sock.recvfrom(8192)
             decoded = data.decode()
             sensor_data = json.loads(decoded)
-            log.info(f"[HMI-UDP] From {addr}: {sensor_data}")
+            send_sensors_to_dashboard(sensor_data)
         except Exception as e:
             log.error(f"[HMI-UDP] Error: {e}")
 
@@ -96,48 +125,49 @@ class AntiARPCachePoisoning (object):
 
         
         eth = packet.find("ethernet")
-        if eth:
-            log.info(f"Ethernet: src={eth.src}, dst={eth.dst}, type={hex(eth.type)}")
 
         # IPv4 Layer
         ip_pkt = packet.find("ipv4")
-        if ip_pkt:
-            log.info(f"IPv4: src={ip_pkt.srcip}, dst={ip_pkt.dstip}, proto={ip_pkt.protocol}")
 
         latency = 0
         # Chỉ xử lý TCP Port 44818 (ENIP)
         tcp_pkt = packet.find("tcp")
-        latency = 0
-        if tcp_pkt:
-            if tcp_pkt.dstport == 44818:
-                log.info(f"ENIP Packet Detected: src_port={tcp_pkt.srcport}, dst_port={tcp_pkt.dstport}")
-                session_id = f"{ip_pkt.srcip}.{ip_pkt.dstip}.{tcp_pkt.srcport}"
-                payload = bytes(tcp_pkt.payload)
-                log.info(f"TCP Payload: {payload}")
-                cip_latency_tracker[session_id] = time.time()
-            if tcp_pkt.srcport == 44818:
-                log.info(f"ENIP Packet Detected: src_port={tcp_pkt.srcport}, dst_port={tcp_pkt.dstport}")
-                session_id = f"{ip_pkt.dstip}.{ip_pkt.srcip}.{tcp_pkt.dstport}"
-                current_time = time.time()
-                if session_id in cip_latency_tracker:
-                    previous_time = cip_latency_tracker[session_id]
-                    latency = current_time - previous_time
-                    log.info("============================================================")
-                    log.info(f"[CIP] Session {session_id} - Latency: {latency:.6f} seconds")
-                    del cip_latency_tracker[session_id]
 
-        now = time.time()
-        for sid in list(cip_latency_tracker):
-            if now - cip_latency_tracker[sid] > 10:
-                del cip_latency_tracker[sid]
+        #arp valid
+        # sender_ip = str(packet.payload.protosrc)
+        # sender_mac = str(packet.payload.hwsrc)
+
+        # if sender_ip in VALID_IP_TO_MAC:
+        #     # Internal attack
+        #     if sender_mac != VALID_IP_TO_MAC[sender_ip]:
+        #         # Internal attack
+        #         if sender_mac in VALID_IP_TO_MAC.values():
+        #             for key, value in VALID_IP_TO_MAC.items():
+        #                 if value == sender_mac:
+        #                     attacker_ip = key
+        #             log("Internal attack")
+        #             # log.warning(
+        #             #     "%d internal ap detected: %s MAC with %s IP "
+        #             #     "tries to impersonate %s IP with %s MAC" % (
+        #             #         event.dpid, sender_mac, attacker_ip,
+        #             #         sender_ip,  VALID_IP_TO_MAC[sender_ip]))
+        #         # External attack
+        #         else:
+        #             log("External attack")
+        #             # log.warning(
+        #             #     "%d external ap detected: %s MAC tries to "
+        #             #     "impersonate %s IP with %s MAC" % (
+        #             #         event.dpid, sender_mac, sender_ip,
+        #             #          VALID_IP_TO_MAC[sender_ip]))
         # Cập nhật thống kê băng thông
         bw = 0
-
+        
         if ip_pkt:
-            conn_key = (str(ip_pkt.srcip), str(ip_pkt.dstip))
             now = time.time()
             pkt_len = len(packet)
-
+            conn_key = (str(ip_pkt.srcip), str(ip_pkt.dstip))
+            if conn_key not in latency_list:
+                latency_list[conn_key] = 0
             if conn_key not in bandwidth_tracker:
                 bandwidth_tracker[conn_key] = [pkt_len, now]
             else:
@@ -145,24 +175,57 @@ class AntiARPCachePoisoning (object):
                 time_diff = now - prev_time
                 if time_diff > 0:
                     bw = (pkt_len * 8) / time_diff  # băng thông tính bằng bit/s
-                    log.info(f"[Bandwidth] {conn_key[0]} -> {conn_key[1]}: {bw:.2f} bps")
+                    bandwidth_list[conn_key] = bw
                 bandwidth_tracker[conn_key] = [pkt_len, now]
-                
+        latency = 0
+        if tcp_pkt:
+            if tcp_pkt.dstport == 44818:
+                # log.info(f"ENIP Packet Detected: src_port={tcp_pkt.srcport}, dst_port={tcp_pkt.dstport}")
+                session_id = f"{ip_pkt.srcip},{ip_pkt.dstip},{tcp_pkt.srcport}"
+                payload = bytes(tcp_pkt.payload)
+                # log.info(f"TCP Payload: {payload}")
+                if session_id not in cip_latency_tracker:
+                    cip_latency_tracker[session_id] = time.time()
+            if tcp_pkt.srcport == 44818:
+                # log.info(f"ENIP Packet Detected: src_port={tcp_pkt.srcport}, dst_port={tcp_pkt.dstport}")
+                session_id = f"{ip_pkt.dstip},{ip_pkt.srcip},{tcp_pkt.dstport}"
+                current_time = time.time()
+                if session_id in cip_latency_tracker:
+                    previous_time = cip_latency_tracker[session_id]
+                    latency = current_time - previous_time
+                    key = (str(ip_pkt.dstip), str(ip_pkt.srcip))
+                    key_down = (str(ip_pkt.srcip), str(ip_pkt.dstip))
+                    latency_list[key] = latency
+                    latency_list[key_down] = latency
+                    metrics = {
+                            "srcip": str(ip_pkt.dstip),
+                            "dstip": str(ip_pkt.srcip),
+                            "latency": latency,
+                            "bandwidth": bandwidth_list.get(key,0),
+                            "timestamp": time.time()
+                            }
+                    send_metrics_to_dashboard(metrics)
+                    del cip_latency_tracker[session_id]
+
+        now = time.time()
+        for sid in list(cip_latency_tracker):
+            if now - cip_latency_tracker[sid] > 10:
+                del cip_latency_tracker[sid]
+
         if ip_pkt:
             metrics = {
                 "srcip": str(ip_pkt.srcip),
                 "dstip": str(ip_pkt.dstip),
-                "latency": latency,
+                "latency": latency_list.get(conn_key,0),
                 "bandwidth": bw,
                 "timestamp": time.time()
                 }
             send_metrics_to_dashboard(metrics)
-        log.info("==============================")
         if packet.dst.is_multicast:
             flood()
         else:
             if packet.dst not in self.macToPort:
-                flood("Port from %s unknown -- flooding" % (packet.dst))
+                flood()
             else:
                 port = self.macToPort[packet.dst]
                 if port == event.port:
@@ -170,8 +233,6 @@ class AntiARPCachePoisoning (object):
                             % (packet.src, packet.dst, port))
                     drop()
                     return
-                log.debug("installing flow for %s.%i -> %s.%i"
-                    % (packet.src, event.port, packet.dst, port))
                 msg = of.ofp_flow_mod()
                 msg.match = of.ofp_match.from_packet(packet, event.port)
                 msg.idle_timeout = 10

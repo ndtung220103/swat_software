@@ -26,29 +26,29 @@ sensor_data = {}
 latency_list = {}
 bandwidth_list = {}  
 
-def send_metrics_to_dashboard(metrics):
-    try:
-        url = "http://127.0.0.1:5000/metrics"
-        headers = {'Content-Type': 'application/json'}
-        response = requests.post(url, headers=headers, json=metrics)
-        # if response.status_code == 200:
-        #     log.info("[DASHBOARD] Sent metrics successfully")
-        # else:
-        #     log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
-    except Exception as e:
-        log.error(f"[DASHBOARD] Exception: {e}")
+# def send_metrics_to_dashboard(metrics):
+#     try:
+#         url = "http://127.0.0.1:5000/metrics"
+#         headers = {'Content-Type': 'application/json'}
+#         response = requests.post(url, headers=headers, json=metrics)
+#         # if response.status_code == 200:
+#         #     log.info("[DASHBOARD] Sent metrics successfully")
+#         # else:
+#         #     log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
+#     except Exception as e:
+#         log.error(f"[DASHBOARD] Exception: {e}")
 
-def send_sensors_to_dashboard(sensors):
-    try:
-        url = "http://127.0.0.1:5000/sensors"
-        headers = {'Content-Type': 'application/json'}
-        response = requests.post(url, headers=headers, json=sensors)
-        # if response.status_code == 200:
-        #     log.info("[DASHBOARD] Sent metrics successfully")
-        # else:
-        #     log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
-    except Exception as e:
-        log.error(f"[DASHBOARD] Exception: {e}")
+# def send_sensors_to_dashboard(sensors):
+#     try:
+#         url = "http://127.0.0.1:5000/sensors"
+#         headers = {'Content-Type': 'application/json'}
+#         response = requests.post(url, headers=headers, json=sensors)
+#         # if response.status_code == 200:
+#         #     log.info("[DASHBOARD] Sent metrics successfully")
+#         # else:
+#         #     log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
+#     except Exception as e:
+#         log.error(f"[DASHBOARD] Exception: {e}")
 # def send_mess_to_dashboard(mess):
 #     try:
 #         url = "http://127.0.0.1:5000/mess"
@@ -61,22 +61,22 @@ def send_sensors_to_dashboard(sensors):
 #     except Exception as e:
 #         log.error(f"[DASHBOARD] Exception: {e}")
 
-def start_udp_server():
-    global sensor_data
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(("0.0.0.0", 9999))
-    log.info("[HMI-UDP] Listening for UDP sensor data on port 9999")
+# def start_udp_server():
+#     global sensor_data
+#     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+#     sock.bind(("0.0.0.0", 9999))
+#     log.info("[HMI-UDP] Listening for UDP sensor data on port 9999")
 
-    while True:
-        try:
-            data, addr = sock.recvfrom(8192)
-            decoded = data.decode()
-            sensor_data = json.loads(decoded)
-            send_sensors_to_dashboard(sensor_data)
-        except Exception as e:
-            log.error(f"[HMI-UDP] Error: {e}")
+#     while True:
+#         try:
+#             data, addr = sock.recvfrom(8192)
+#             decoded = data.decode()
+#             sensor_data = json.loads(decoded)
+#             send_sensors_to_dashboard(sensor_data)
+#         except Exception as e:
+#             log.error(f"[HMI-UDP] Error: {e}")
 
-class AntiARPCachePoisoning (object):
+class SwitchHandle (object):
     def __init__(self, connection):
         self.connection = connection
         self.macToPort = {}
@@ -125,12 +125,7 @@ class AntiARPCachePoisoning (object):
 
         
         eth = packet.find("ethernet")
-
-        # IPv4 Layer
         ip_pkt = packet.find("ipv4")
-
-        latency = 0
-        # Chỉ xử lý TCP Port 44818 (ENIP)
         tcp_pkt = packet.find("tcp")
 
         #arp valid
@@ -160,67 +155,7 @@ class AntiARPCachePoisoning (object):
         #             #         event.dpid, sender_mac, sender_ip,
         #             #          VALID_IP_TO_MAC[sender_ip]))
         # Cập nhật thống kê băng thông
-        bw = 0
         
-        if ip_pkt:
-            now = time.time()
-            pkt_len = len(packet)
-            conn_key = (str(ip_pkt.srcip), str(ip_pkt.dstip))
-            if conn_key not in latency_list:
-                latency_list[conn_key] = 0
-            if conn_key not in bandwidth_tracker:
-                bandwidth_tracker[conn_key] = [pkt_len, now]
-            else:
-                prev_bytes, prev_time = bandwidth_tracker[conn_key]
-                time_diff = now - prev_time
-                if time_diff > 0:
-                    bw = (pkt_len * 8) / time_diff  # băng thông tính bằng bit/s
-                    bandwidth_list[conn_key] = bw
-                bandwidth_tracker[conn_key] = [pkt_len, now]
-        latency = 0
-        if tcp_pkt:
-            if tcp_pkt.dstport == 44818:
-                # log.info(f"ENIP Packet Detected: src_port={tcp_pkt.srcport}, dst_port={tcp_pkt.dstport}")
-                session_id = f"{ip_pkt.srcip},{ip_pkt.dstip},{tcp_pkt.srcport}"
-                payload = bytes(tcp_pkt.payload)
-                # log.info(f"TCP Payload: {payload}")
-                if session_id not in cip_latency_tracker:
-                    cip_latency_tracker[session_id] = time.time()
-            if tcp_pkt.srcport == 44818:
-                # log.info(f"ENIP Packet Detected: src_port={tcp_pkt.srcport}, dst_port={tcp_pkt.dstport}")
-                session_id = f"{ip_pkt.dstip},{ip_pkt.srcip},{tcp_pkt.dstport}"
-                current_time = time.time()
-                if session_id in cip_latency_tracker:
-                    previous_time = cip_latency_tracker[session_id]
-                    latency = current_time - previous_time
-                    key = (str(ip_pkt.dstip), str(ip_pkt.srcip))
-                    key_down = (str(ip_pkt.srcip), str(ip_pkt.dstip))
-                    latency_list[key] = latency
-                    latency_list[key_down] = latency
-                    metrics = {
-                            "srcip": str(ip_pkt.dstip),
-                            "dstip": str(ip_pkt.srcip),
-                            "latency": latency,
-                            "bandwidth": bandwidth_list.get(key,0),
-                            "timestamp": time.time()
-                            }
-                    send_metrics_to_dashboard(metrics)
-                    del cip_latency_tracker[session_id]
-
-        now = time.time()
-        for sid in list(cip_latency_tracker):
-            if now - cip_latency_tracker[sid] > 10:
-                del cip_latency_tracker[sid]
-
-        if ip_pkt:
-            metrics = {
-                "srcip": str(ip_pkt.srcip),
-                "dstip": str(ip_pkt.dstip),
-                "latency": latency_list.get(conn_key,0),
-                "bandwidth": bw,
-                "timestamp": time.time()
-                }
-            send_metrics_to_dashboard(metrics)
         if packet.dst.is_multicast:
             flood()
         else:
@@ -234,9 +169,16 @@ class AntiARPCachePoisoning (object):
                     drop()
                     return
                 msg = of.ofp_flow_mod()
-                msg.match = of.ofp_match.from_packet(packet, event.port)
-                msg.idle_timeout = 10
-                msg.hard_timeout = 30
+                match = of.ofp_match()
+                if eth:
+                    match.dl_src = eth.src
+                    match.dl_dst = eth.dst
+                if ip_pkt:
+                    match.nw_src = ip_pkt.srcip
+                    match.nw_dst = ip_pkt.dstip
+                # msg.idle_timeout = 10
+                # msg.hard_timeout = 30
+                msg.match = match
                 action = of.ofp_action_output(port=port)
                 msg.actions.append(action)
                 msg.data = event.ofp
@@ -249,9 +191,9 @@ def launch():
     """
     def start_switch(event):
         log.info(f"Switch {event.connection.dpid} has connected")
-        AntiARPCachePoisoning(event.connection)
+        SwitchHandle(event.connection)
 
     core.openflow.addListenerByName("ConnectionUp", start_switch)
 
-    threading.Thread(target=start_udp_server, daemon=True).start()
-    log.info("Anti ARP Cache Poisoning Controller is running")
+    #threading.Thread(target=start_udp_server, daemon=True).start()
+    log.info("Controller is running")
