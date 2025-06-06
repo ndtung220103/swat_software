@@ -10,7 +10,10 @@ import threading
 
 
 PACKETS = Queue()
+KEYMATCH = Queue()
 
+syn_packets = defaultdict(list)
+synack_packets = defaultdict(list)
 
 def is_if_up(ifname):
     try:
@@ -35,50 +38,60 @@ def start_sniff():
     #sniff(iface="s1-eth2", prn=packet_callback, store =0)
 
 def detect():
-    now = time.time()
     while True:
         packet = PACKETS.get()
-        print(packet.summary())
-        # timestamp = datetime.datetime.fromtimestamp(packet.time).isoformat()
-        # # Ethernet layer
-        # if Ether in packet:
-        #     src_mac = packet[Ether].src
-        #     dst_mac = packet[Ether].dst
-        # else:
-        #     src_mac = dst_mac = None
-        
-        # # IP layer
-        # if IP in packet:
-        #     src_ip = packet[IP].src
-        #     dst_ip = packet[IP].dst
-        # else:
-        #     src_ip = dst_ip = None
+        if packet.haslayer(TCP) and packet.haslayer(IP):
+            ip_layer = packet[IP]
+            tcp_layer = packet[TCP]
+            flags = tcp_layer.flags
+            timestamp = datetime.datetime.fromtimestamp(packet.time)
 
-        # # Transport layer
-        # if TCP in packet:
-        #     src_port = packet[TCP].sport
-        #     dst_port = packet[TCP].dport
-        # elif UDP in packet:
-        #     src_port = packet[UDP].sport
-        #     dst_port = packet[UDP].dport
-        # else:
-        #     src_port = dst_port = None
-        
-        # print(f"Timestamp: {timestamp}")
-        # print(f"MAC: {src_mac} -> {dst_mac}")
-        # print(f"IP: {src_ip} -> {dst_ip}")
-        # print(f"Port: {src_port} -> {dst_port}")
+            # Định danh kết nối
+            conn_key = f"{ip_layer.src}:{tcp_layer.sport} -> {ip_layer.dst}:{tcp_layer.dport}"
+            reverse_key = f"{ip_layer.dst}:{tcp_layer.dport} -> {ip_layer.src}:{tcp_layer.sport}"
+
+            if flags == 'S':
+                if conn_key not in syn_packets:
+                    syn_packets[conn_key] = []
+                    KEYMATCH.put(conn_key)
+                syn_packets[conn_key].append(timestamp)
+
+            elif flags == 'SA':
+                if reverse_key not in synack_packets:
+                    synack_packets[reverse_key] = []
+                synack_packets[reverse_key].append(timestamp)
 
 def monitor():
-    detect()
+    time.sleep(1)
     while True:
-        # In thông tin ra màn hình hoặc gửi thông báo
-        print('')
-        time.sleep(5)
+        if KEYMATCH.qsize > 2:
+            conn_key = KEYMATCH.get()
+            if conn_key in syn_packets and conn_key in synack_packets:
+                syn_times = syn_packets[conn_key]
+                synack_times = synack_packets[conn_key]
+
+                syn_earliest = min(syn_times)
+                synack_latest = max(synack_times)
+                syn_latest = max(syn_times)
+                synack_earliest = min(synack_times)
+
+                RTT = (synack_latest - syn_earliest).total_seconds()
+                Latency = (syn_latest-syn_earliest).total_second()
+
+                print(f" Kết nối: {conn_key}")
+                print(f"→ Số lần xuất hiện SYN: {len(syn_times)}")
+                print(f"→ Thời gian SYN sớm nhất: {syn_earliest.isoformat(timespec='microseconds')}")
+                print(f"→ Thời gian SYN-ACK muộn nhất: {synack_latest.isoformat(timespec='microseconds')}")
+                print(f"→ Trễ truyền dẫn: {Latency:.6f} ms")
+                print(f"→ Hiệu thời gian: {RTT:.6f} ms")
+
+                del syn_packets[conn_key]
+                del synack_packets[conn_key]
 
 if __name__ == '__main__':
     print("Khởi động bắt gói tin...")
     start_sniff()
+    threading.Thread(target=detect, daemon=True).start()
     threading.Thread(target=monitor, daemon=True).start()
     while True:
         time.sleep(1)
