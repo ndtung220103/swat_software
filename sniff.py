@@ -90,7 +90,7 @@ def monitor():
                     "RTT": RTT,
                     "NO": NO
                 }
-
+                print(metrics)
                 if key not in list_metric:
                     list_metric[key] = metrics
                 else:
