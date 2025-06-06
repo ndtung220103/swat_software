@@ -82,8 +82,8 @@ def monitor():
                 print(f"→ Số lần xuất hiện SYN: {len(syn_times)}")
                 print(f"→ Thời gian SYN sớm nhất: {syn_earliest.isoformat(timespec='microseconds')}")
                 print(f"→ Thời gian SYN-ACK muộn nhất: {synack_latest.isoformat(timespec='microseconds')}")
-                print(f"→ Trễ truyền dẫn: {Latency:.6f} ms")
-                print(f"→ Hiệu thời gian: {RTT:.6f} ms")
+                print(f"→ Trễ truyền dẫn: {Latency} ms")
+                print(f"→ Hiệu thời gian: {RTT} ms")
 
                 del syn_packets[conn_key]
                 del synack_packets[conn_key]
