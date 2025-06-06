@@ -201,9 +201,10 @@ def _handle_PortStatsReceived(event):
 def _handle_FlowStatsReceived(event):
     log.info(f"Flow stats from switch {event.connection.dpid}")
     for flow in event.stats:
-        log.info("Match %s: Packets %d | Bytes %d bytes | Duration  %ds",
-                 flow.match, flow.packet_count,
-                 flow.byte_count, flow.duration_sec)
+        log.info("srcMac%s -> dstMac %s / srcIp %s -> dstIp %s: Packets %d | Bytes %d bytes | Duration  %ds",
+                 flow.match.nw_src,flow.match.nw_dst,
+                 flow.match.dl_src,flow.match.dl_src, 
+                 flow.packet_count,flow.byte_count, flow.duration_sec)
         
 
 def poll_stats():
