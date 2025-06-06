@@ -63,7 +63,7 @@ def detect():
                 synack_packets[reverse_key].append(timestamp)
 
 def monitor():
-    time.sleep(1)
+    time.sleep(3)
     while True:
         if KEYMATCH.qsize() > 5:
             conn_key = KEYMATCH.get()
