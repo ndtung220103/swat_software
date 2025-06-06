@@ -64,6 +64,7 @@ def detect():
 def monitor():
     time.sleep(1)
     while True:
+        print("Queue size: ",KEYMATCH.qsize())
         if KEYMATCH.qsize() > 2:
             conn_key = KEYMATCH.get()
             if conn_key in syn_packets and conn_key in synack_packets:
