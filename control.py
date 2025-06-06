@@ -1,6 +1,7 @@
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.lib.addresses import IPAddr, EthAddr
+from pox.lib.recoco import Timer
 import threading
 import socket
 import json
@@ -187,7 +188,34 @@ class SwitchHandle (object):
                     msg.actions.append(action)
                     self.connection.send(msg)
 
-        
+def _handle_PortStatsReceived(event):
+    log.info("=== Port Stats Received from Switch %s ===", event.connection.dpid)
+    for stat in event.stats:
+        log.info("Port %d: RX %d pkts / %d bytes | TX %d pkts / %d bytes | Drops RX %d / TX %d | Errors RX %d / TX %d",
+                 stat.port_no,
+                 stat.rx_packets, stat.rx_bytes,
+                 stat.tx_packets, stat.tx_bytes,
+                 stat.rx_dropped, stat.tx_dropped,
+                 stat.rx_errors, stat.tx_errors)
+
+def _handle_FlowStatsReceived(event):
+    log.info(f"Flow stats from switch {event.connection.dpid}")
+    for flow in event.stats:
+        log.info(f"Match: {flow.match}, Packets: {flow.packet_count}, Bytes: {flow.byte_count}, Duration: {flow.duration_sec}s")
+
+def poll_stats():
+    for connection in core.openflow._connections.values():
+        # Lấy flow stats
+        req1 = of.ofp_stats_request()
+        req1.type = of.OFPST_FLOW
+        req1.body = of.ofp_flow_stats_request()
+        connection.send(req1)
+
+        # Lấy port stats
+        req2 = of.ofp_stats_request()
+        req2.type = of.OFPST_PORT
+        req2.body = of.ofp_port_stats_request(port_no=of.OFPP_NONE)
+        connection.send(req2)      
 
 def launch():
     """
@@ -198,6 +226,8 @@ def launch():
         SwitchHandle(event.connection)
 
     core.openflow.addListenerByName("ConnectionUp", start_switch)
-
+    core.openflow.addListenerByName("PortStatsReceived", _handle_PortStatsReceived)
+    core.openflow.addListenerByName("FlowStatsReceived", _handle_FlowStatsReceived)
+    Timer(2, poll_stats, recurring=True) 
     #threading.Thread(target=start_udp_server, daemon=True).start()
     log.info("Controller is running")
