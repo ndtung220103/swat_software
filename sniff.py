@@ -64,7 +64,7 @@ def detect():
 def monitor():
     time.sleep(1)
     while True:
-        if KEYMATCH.qsize > 2:
+        if KEYMATCH.qsize() > 2:
             conn_key = KEYMATCH.get()
             if conn_key in syn_packets and conn_key in synack_packets:
                 syn_times = syn_packets[conn_key]
