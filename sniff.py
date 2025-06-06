@@ -76,8 +76,8 @@ def monitor():
                 syn_latest = max(syn_times)
                 synack_earliest = min(synack_times)
 
-                RTT = (synack_latest - syn_earliest)
-                Latency = (syn_latest-syn_earliest)
+                RTT = float(synack_latest - syn_earliest)
+                Latency = float(syn_latest-syn_earliest)
                 NO = len(syn_times)
                 src_part, dst_part = conn_key.split(" -> ")
                 src_ip, src_port = src_part.split(":")
