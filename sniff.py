@@ -64,17 +64,10 @@ def detect():
         else:
             src_port = dst_port = None
         
-        # Raw payload
-        if Raw in packet:
-            payload = bytes(packet[Raw]).hex()  # hoặc .decode(errors='ignore')
-        else:
-            payload = None
-        
         print(f"Timestamp: {timestamp}")
         print(f"MAC: {src_mac} -> {dst_mac}")
         print(f"IP: {src_ip} -> {dst_ip}")
         print(f"Port: {src_port} -> {dst_port}")
-        print(f"Payload (hex): {payload[:64]}...")
 
 def monitor():
     detect()
