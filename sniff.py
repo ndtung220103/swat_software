@@ -75,8 +75,8 @@ def monitor():
                 syn_latest = max(syn_times)
                 synack_earliest = min(synack_times)
 
-                RTT = (synack_latest - syn_earliest).total_seconds()
-                Latency = (syn_latest-syn_earliest).total_second()
+                RTT = (synack_latest - syn_earliest)
+                Latency = (syn_latest-syn_earliest)
 
                 print(f" Kết nối: {conn_key}")
                 print(f"→ Số lần xuất hiện SYN: {len(syn_times)}")
