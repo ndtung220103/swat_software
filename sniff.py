@@ -39,35 +39,35 @@ def detect():
     while True:
         packet = PACKETS.get()
         print(packet.summary())
-        timestamp = datetime.datetime.fromtimestamp(packet.time).isoformat()
-        # Ethernet layer
-        if Ether in packet:
-            src_mac = packet[Ether].src
-            dst_mac = packet[Ether].dst
-        else:
-            src_mac = dst_mac = None
+        # timestamp = datetime.datetime.fromtimestamp(packet.time).isoformat()
+        # # Ethernet layer
+        # if Ether in packet:
+        #     src_mac = packet[Ether].src
+        #     dst_mac = packet[Ether].dst
+        # else:
+        #     src_mac = dst_mac = None
         
-        # IP layer
-        if IP in packet:
-            src_ip = packet[IP].src
-            dst_ip = packet[IP].dst
-        else:
-            src_ip = dst_ip = None
+        # # IP layer
+        # if IP in packet:
+        #     src_ip = packet[IP].src
+        #     dst_ip = packet[IP].dst
+        # else:
+        #     src_ip = dst_ip = None
 
-        # Transport layer
-        if TCP in packet:
-            src_port = packet[TCP].sport
-            dst_port = packet[TCP].dport
-        elif UDP in packet:
-            src_port = packet[UDP].sport
-            dst_port = packet[UDP].dport
-        else:
-            src_port = dst_port = None
+        # # Transport layer
+        # if TCP in packet:
+        #     src_port = packet[TCP].sport
+        #     dst_port = packet[TCP].dport
+        # elif UDP in packet:
+        #     src_port = packet[UDP].sport
+        #     dst_port = packet[UDP].dport
+        # else:
+        #     src_port = dst_port = None
         
-        print(f"Timestamp: {timestamp}")
-        print(f"MAC: {src_mac} -> {dst_mac}")
-        print(f"IP: {src_ip} -> {dst_ip}")
-        print(f"Port: {src_port} -> {dst_port}")
+        # print(f"Timestamp: {timestamp}")
+        # print(f"MAC: {src_mac} -> {dst_mac}")
+        # print(f"IP: {src_ip} -> {dst_ip}")
+        # print(f"Port: {src_port} -> {dst_port}")
 
 def monitor():
     detect()
