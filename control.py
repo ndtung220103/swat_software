@@ -201,7 +201,10 @@ def _handle_PortStatsReceived(event):
 def _handle_FlowStatsReceived(event):
     log.info(f"Flow stats from switch {event.connection.dpid}")
     for flow in event.stats:
-        log.info(f"Match: {flow.match}, Packets: {flow.packet_count}, Bytes: {flow.byte_count}, Duration: {flow.duration_sec}s")
+        log.info("Match %s: Packets %d | Bytes %d bytes | Duration  %ds",
+                 flow.match, flow.packet_count,
+                 flow.byte_count, flow.duration_sec)
+        
 
 def poll_stats():
     for connection in core.openflow._connections.values():
