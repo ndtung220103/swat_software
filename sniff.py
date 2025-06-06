@@ -76,9 +76,10 @@ def monitor():
                 syn_latest = max(syn_times)
                 synack_earliest = min(synack_times)
 
-                RTT = str(synack_latest - syn_earliest)
-                Latency = str(syn_latest-syn_earliest)
+                RTT = (synack_latest - syn_earliest).total_seconds()
+                Latency = (syn_latest - syn_earliest).total_seconds()
                 NO = len(syn_times)
+
                 src_part, dst_part = conn_key.split(" -> ")
                 src_ip, src_port = src_part.split(":")
                 dst_ip, dst_port = dst_part.split(":")
@@ -89,13 +90,13 @@ def monitor():
                     "RTT": RTT,
                     "NO": NO
                 }
-                if key not in list_metric:
-                    list_metric[key]= metrics
-                else:
-                    list_metric[key].RTT = alpha*RTT + (1-alpha)*list_metric[key].RTT
-                    list_metric[key].Latency = alpha*Latency + (1-alpha)*list_metric[key].Latency
-                    list_metric[key].NO = NO
 
+                if key not in list_metric:
+                    list_metric[key] = metrics
+                else:
+                    list_metric[key]["RTT"] = alpha * RTT + (1 - alpha) * list_metric[key]["RTT"]
+                    list_metric[key]["Latency"] = alpha * Latency + (1 - alpha) * list_metric[key]["Latency"]
+                    list_metric[key]["NO"] = NO
                 del syn_packets[conn_key]
                 del synack_packets[conn_key]
 
