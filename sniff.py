@@ -14,7 +14,8 @@ KEYMATCH = Queue()
 
 syn_packets = defaultdict(list)
 synack_packets = defaultdict(list)
-
+list_metric = {}
+alpha = 0.2
 def is_if_up(ifname):
     try:
         result = subprocess.check_output(f"cat /sys/class/net/{ifname}/operstate",
@@ -64,9 +65,7 @@ def detect():
 def monitor():
     time.sleep(1)
     while True:
-        size = KEYMATCH.qsize()
-        print("Queue size: ",size)
-        if size > 5:
+        if KEYMATCH.qsize() > 5:
             conn_key = KEYMATCH.get()
             if conn_key in syn_packets and conn_key in synack_packets:
                 syn_times = syn_packets[conn_key]
@@ -79,21 +78,37 @@ def monitor():
 
                 RTT = (synack_latest - syn_earliest)
                 Latency = (syn_latest-syn_earliest)
+                NO = len(syn_times)
+                src_part, dst_part = conn_key.split(" -> ")
+                src_ip, src_port = src_part.split(":")
+                dst_ip, dst_port = dst_part.split(":")
 
-                print(f" Kết nối: {conn_key}")
-                print(f"→ Số lần xuất hiện SYN: {len(syn_times)}")
-                print(f"→ Thời gian SYN sớm nhất: {syn_earliest.isoformat(timespec='microseconds')}")
-                print(f"→ Thời gian SYN-ACK muộn nhất: {synack_latest.isoformat(timespec='microseconds')}")
-                print(f"→ Trễ truyền dẫn: {Latency} ms")
-                print(f"→ Hiệu thời gian: {RTT} ms")
+                key = f"{src_ip} -> {dst_ip}"
+                metrics = {
+                    "Latency": Latency,
+                    "RTT": RTT,
+                    "NO": NO
+                }
+                if key not in list_metric:
+                    list_metric[key]= metrics
+                else:
+                    list_metric[key].RTT = alpha*RTT + (1-alpha)*list_metric[key].RTT
+                    list_metric[key].Latency = alpha*Latency + (1-alpha)*list_metric[key].Latency
+                    list_metric[key].NO = NO
 
                 del syn_packets[conn_key]
                 del synack_packets[conn_key]
+
+def send_to_dashboard():
+    while True:
+        print(list_metric)
+        time.sleep(3)
 
 if __name__ == '__main__':
     print("Khởi động bắt gói tin...")
     start_sniff()
     threading.Thread(target=detect, daemon=True).start()
     threading.Thread(target=monitor, daemon=True).start()
+    threading.Thread(target=send_to_dashboard, daemon=True).start()
     while True:
         time.sleep(1)
