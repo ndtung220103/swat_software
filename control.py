@@ -173,8 +173,8 @@ class SwitchHandle (object):
                     match.dl_dst = eth.dst
                     match.nw_src = ip_pkt.srcip
                     match.nw_dst = ip_pkt.dstip
-                    # msg.idle_timeout = 10
-                    # msg.hard_timeout = 30
+                    msg.idle_timeout = 20
+                    # msg.hard_timeout = 50
                     msg.match = match
                     action = of.ofp_action_output(port=port)
                     msg.actions.append(action)
@@ -231,6 +231,6 @@ def launch():
     core.openflow.addListenerByName("ConnectionUp", start_switch)
     core.openflow.addListenerByName("PortStatsReceived", _handle_PortStatsReceived)
     core.openflow.addListenerByName("FlowStatsReceived", _handle_FlowStatsReceived)
-    Timer(2, poll_stats, recurring=True) 
+    Timer(5, poll_stats, recurring=True) 
     #threading.Thread(target=start_udp_server, daemon=True).start()
     log.info("Controller is running")
