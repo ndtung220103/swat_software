@@ -64,10 +64,10 @@
 
         async function fetchData() {
             const [sensors, metrics, ports, flows] = await Promise.all([
-                fetch('/sensors').then(res => res.json()),
-                fetch('/metrics').then(res => res.json()),
-                fetch('/get_port_stats').then(res => res.json()),
-                fetch('/get_flow_stats').then(res => res.json())
+                fetch('http://127.0.0.1:5000/sensors').then(res => res.json()),
+                fetch('http://127.0.0.1:5000/metrics').then(res => res.json()),
+                fetch('http://127.0.0.1:5000/get_port_stats').then(res => res.json()),
+                fetch('http://127.0.0.1:5000/get_flow_stats').then(res => res.json())
             ]);
 
             // Sensors
@@ -88,8 +88,8 @@
 
         function selectSwitch(sw) {
             currentSwitch = sw;
-            fetch('/get_port_stats').then(res => res.json()).then(ports => {
-                fetch('/get_flow_stats').then(res => res.json()).then(flows => {
+            fetch('http://127.0.0.1:5000/get_port_stats').then(res => res.json()).then(ports => {
+                fetch('http://127.0.0.1:5000/get_flow_stats').then(res => res.json()).then(flows => {
                     showSwitchStats(sw, ports, flows);
                 });
             });
