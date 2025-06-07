@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SWaT Dashboard</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f5f7fa;
+        padding: 20px;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .container {
+        display: grid;
+        grid-template-columns: 1fr 2fr 2fr;
+        gap: 15px;
+        height: calc(100vh - 40px);
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .section {
+        border: 2px solid #333;
+        background-color: #fff;
+        border-radius: 8px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .section-header {
+        background: linear-gradient(135deg, #baf1c1, #a8e6a3);
+        padding: 12px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 16px;
+        color: #2d3748;
+        border-bottom: 2px solid #333;
+      }
+
+      .sub-header {
+        background: linear-gradient(135deg, #f4aeb2, #f1959b);
+        padding: 8px;
+        text-align: center;
+        font-weight: bold;
+        color: #2d3748;
+        border-bottom: 1px solid #ddd;
+      }
+
+      .content-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+      }
+
+      .scrollable-content {
+        max-height: 100%;
+        overflow-y: auto;
+      }
+
+      /* Left Column Styles */
+      .left-column {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .alerts-section {
+        flex: 0 0 auto;
+        height: 50%;
+        scroll-behavior: auto;
+      }
+
+      .sensors-section {
+        flex: 1;
+        height: 30%;
+        min-height: 0;
+      }
+
+      .alert-item {
+        background-color: #fed7d7;
+        border: 1px solid #fc8181;
+        border-radius: 6px;
+        padding: 5px;
+        margin-bottom: 8px;
+        color: #c53030;
+        font-weight: 500;
+      }
+
+      .no-alerts {
+        color: #68d391;
+        text-align: center;
+        font-weight: 500;
+        padding: 20px;
+      }
+
+      .sensor-item {
+        background-color: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 1px;
+        margin-bottom: 10px;
+        transition: transform 0.2s ease;
+      }
+
+      .sensor-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .sensor-label {
+        font-weight: bold;
+        color: #2d3748;
+        font-size: 12px;
+      }
+
+      .sensor-value {
+        color: #3182ce;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 4px;
+      }
+
+      /* Button Styles */
+      .button-group {
+        padding: 15px;
+        text-align: center;
+        border-bottom: 2px solid #e2e8f0;
+        background-color: #f8f9fa;
+      }
+
+      .switch-button {
+        margin: 0 8px;
+        padding: 10px 20px;
+        border: 2px solid #4a5568;
+        background-color: #e2e8f0;
+        color: #4a5568;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+      }
+
+      .switch-button:hover {
+        background-color: #cbd5e0;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .switch-button.active {
+        background-color: #3182ce;
+        color: white;
+        border-color: #3182ce;
+        box-shadow: 0 4px 8px rgba(49, 130, 206, 0.3);
+      }
+
+      /* Table Styles */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        background-color: white;
+      }
+
+      th {
+        background: linear-gradient(135deg, #f4aeb2, #f1959b);
+        color: #2d3748;
+        font-weight: bold;
+        padding: 10px 8px;
+        border: 1px solid #cbd5e0;
+        text-align: center;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+
+      td {
+        padding: 8px 6px;
+        border: 1px solid #e2e8f0;
+        text-align: center;
+        background-color: white;
+      }
+
+      tbody tr:hover {
+        background-color: #f7fafc;
+      }
+
+      tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+      }
+
+      .table-container {
+        flex: 1;
+        overflow-y: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        margin-bottom: 15px;
+      }
+
+      /* Right Column Layout */
+      .right-column {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .port-section {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        height: 30%;
+        flex-direction: column;
+        border-bottom: 2px solid #e2e8f0;
+      }
+
+      .flow-section {
+        flex: 1;
+        min-height: 0;
+        height: 70%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* SNIFF Table Specific */
+      .sniff-table-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0;
+      }
+
+      .sniff-table {
+        height: 100%;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 1200px) {
+        .container {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto auto auto;
+          gap: 10px;
+        }
+        
+        .left-column {
+          flex-direction: row;
+        }
+        
+        .alerts-section,
+        .sensors-section {
+          flex: 1;
+          max-height: none;
+        }
+      }
+
+      /* Custom Scrollbar */
+      .scrollable-content::-webkit-scrollbar,
+      .table-container::-webkit-scrollbar,
+      .content-area::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .scrollable-content::-webkit-scrollbar-track,
+      .table-container::-webkit-scrollbar-track,
+      .content-area::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+
+      .scrollable-content::-webkit-scrollbar-thumb,
+      .table-container::-webkit-scrollbar-thumb,
+      .content-area::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+      }
+
+      .scrollable-content::-webkit-scrollbar-thumb:hover,
+      .table-container::-webkit-scrollbar-thumb:hover,
+      .content-area::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+      }
+
+      /* Loading Animation */
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      /* Status Indicators */
+      .status-good { color: #38a169; }
+      .status-warning { color: #d69e2e; }
+      .status-error { color: #e53e3e; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Left Column: Alerts and Sensors -->
+      <div class="left-column">
+        <!-- Alerts Section -->
+        <div class="section alerts-section">
+          <div class="section-header">Cảnh báo</div>
+          <div class="content-area">
+            <div id="alerts" class="scrollable-content">
+              <div class="no-alerts">Không có cảnh báo.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sensors Section -->
+        <div class="section sensors-section">
+          <div class="section-header">Thông số sensors</div>
+          <div class="content-area">
+            <div id="sensors" class="scrollable-content">
+              <div class="loading"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Middle Column: SNIFF -->
+      <div class="section">
+        <div class="section-header">🌐 SNIFF</div>
+        <div class="sniff-table-container">
+          <table class="sniff-table">
+            <thead>
+              <tr>
+                <th>src→dst</th>
+                <th>RTT (μs)</th>
+                <th>Latency (μs)</th>
+                <th>NUM</th>
+              </tr>
+            </thead>
+            <tbody id="sniff-table">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Right Column: Switch Stats -->
+      <div class="section right-column">
+        <div class="button-group">
+          <button class="switch-button active" onclick="selectSwitch(1)" id="switch1-btn">
+            🔄 SWITCH1
+          </button>
+          <button class="switch-button" onclick="selectSwitch(2)" id="switch2-btn">
+            🔄 SWITCH2
+          </button>
+        </div>
+
+        <!-- PORT Section -->
+        <div class="port-section">
+          <div class="sub-header">📡 PORT</div>
+          <div class="table-container">
+            <div id="port-data">
+              <div class="loading"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FLOW Section -->
+        <div class="flow-section">
+          <div class="sub-header">🌊 FLOW</div>
+          <div class="table-container">
+            <div id="flow-data">
+              <div class="loading"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let currentSwitch = 1;
+      const port_last_time = {};
+      const flow_last_time = {};
+
+      // Mock data for demonstration
+      const mockData = {
+        sensors: {
+          'LIT101': 2.1345, 'LIT301': 2.1233, 'LIT401':1.12334, 'LIT501': 1.1655, 'LIT502': 3.4578
+        },
+        metrics: {
+          '192.168.1.1→192.168.1.2': { RTT: 0.001234, Latency: 0.000567, NUM: 1245 },
+          '192.168.1.2→192.168.1.3': { RTT: 0.002145, Latency: 0.000789, NUM: 987 },
+          '192.168.1.3→192.168.1.1': { RTT: 0.001876, Latency: 0.000432, NUM: 1543 },
+          '192.168.1.4→192.168.1.5': { RTT: 0.001567, Latency: 0.000654, NUM: 2134 },
+          '192.168.1.5→192.168.1.6': { RTT: 0.002234, Latency: 0.000891, NUM: 876 }
+        },
+        ports: {
+          '1_port1': { Time: Date.now() / 1000, rx_packets: 12450, tx_packets: 11230, tx_bytes: 2456789 },
+          '1_port2': { Time: Date.now() / 1000, rx_packets: 8760, tx_packets: 9120, tx_bytes: 1789456 },
+          '1_port3': { Time: Date.now() / 1000, rx_packets: 15620, tx_packets: 14890, tx_bytes: 3245678 },
+          '2_port1': { Time: Date.now() / 1000, rx_packets: 9870, tx_packets: 10450, tx_bytes: 2134567 },
+          '2_port2': { Time: Date.now() / 1000, rx_packets: 13240, tx_packets: 12890, tx_bytes: 2987654 },
+          '2_port3': { Time: Date.now() / 1000, rx_packets: 7650, tx_packets: 8120, tx_bytes: 1654321 }
+        },
+        flows: {
+          '1_flow1': { Time: Date.now() / 1000, Packets: 5450, Bytes: 678912, Duration: 12.5, rx_errors: 0, rx_dropped: 2 },
+          '1_flow2': { Time: Date.now() / 1000, Packets: 3210, Bytes: 456789, Duration: 8.3, rx_errors: 1, rx_dropped: 0 },
+          '1_flow3': { Time: Date.now() / 1000, Packets: 7890, Bytes: 987654, Duration: 15.7, rx_errors: 0, rx_dropped: 1 },
+          '2_flow1': { Time: Date.now() / 1000, Packets: 4560, Bytes: 567891, Duration: 10.2, rx_errors: 2, rx_dropped: 3 },
+          '2_flow2': { Time: Date.now() / 1000, Packets: 6780, Bytes: 789123, Duration: 14.8, rx_errors: 0, rx_dropped: 0 },
+          '2_flow3': { Time: Date.now() / 1000, Packets: 2340, Bytes: 345678, Duration: 6.1, rx_errors: 1, rx_dropped: 2 }
+        }
+      };
+
+      async function fetchData() {
+        try {
+          // Simulate API delay
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          // In real implementation, replace with actual API calls:
+          const [sensors, metrics, ports, flows] = await Promise.all([
+            fetch("http://127.0.0.1:5000/sensors").then((res) => res.json()),
+            fetch("http://127.0.0.1:5000/metrics").then((res) => res.json()),
+            fetch("http://127.0.0.1:5000/get_port_stats").then((res) => res.json()),
+            fetch("http://127.0.0.1:5000/get_flow_stats").then((res) => res.json()),
+          ]);
+
+          const { sensors, metrics, ports, flows } = mockData;
+
+          updateSensors(sensors);
+          updateMetrics(metrics);
+          updateAlerts(sensors);
+          showSwitchStats(currentSwitch, ports, flows);
+
+        } catch (error) {
+          console.error('Error fetching data:', error);
+          document.getElementById("sensors").innerHTML = '<div style="color: red;">❌ Connection Error</div>';
+        }
+      }
+
+      function updateSensors(sensors) {
+        const sensorsDiv = document.getElementById("sensors");
+        sensorsDiv.innerHTML = Object.entries(sensors)
+          .map(([key, value]) => `
+            <div class="sensor-item">
+              <div class="sensor-label">${key}</div>
+              <div class="sensor-value">${value}</div>
+            </div>
+          `).join("");
+      }
+
+      function updateMetrics(metrics) {
+        const sniffTable = document.getElementById("sniff-table");
+        sniffTable.innerHTML = "";
+        
+        for (const [key, val] of Object.entries(metrics)) {
+          const rtt = (val.RTT * 1e6).toFixed(2);
+          const latency = (val.Latency * 1e6).toFixed(2);
+          
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td style="font-family: monospace; font-size: 12px;">${key}</td>
+            <td class="${getRttStatus(rtt)}">${rtt}</td>
+            <td class="${getLatencyStatus(latency)}">${latency}</td>
+            <td class="status-good">${val.NUM.toLocaleString()}</td>
+          `;
+          sniffTable.appendChild(row);
+        }
+      }
+
+      function updateAlerts(sensors) {
+        const alertsDiv = document.getElementById("alerts");
+        const alerts = [];
+
+        // Check for alert conditions
+        const temp = parseFloat(sensors['Temperature']);
+        if (temp > 30) {
+          alerts.push('🌡️ High temperature detected!');
+        }
+
+        const pressure = parseFloat(sensors['Pressure']);
+        if (pressure > 105) {
+          alerts.push('⚠️ High pressure warning!');
+        }
+
+        if (alerts.length > 0) {
+          alertsDiv.innerHTML = alerts.map(alert => 
+            `<div class="alert-item">${alert}</div>`
+          ).join("");
+        } else {
+          alertsDiv.innerHTML = '<div class="no-alerts">✅ Không có cảnh báo.</div>';
+        }
+      }
+
+      function selectSwitch(sw) {
+        currentSwitch = sw;
+        
+        // Update button states
+        document.getElementById('switch1-btn').classList.toggle('active', sw === 1);
+        document.getElementById('switch2-btn').classList.toggle('active', sw === 2);
+        
+        fetchData();
+      }
+
+      function showSwitchStats(sw, ports, flows) {
+        const portDiv = document.getElementById("port-data");
+        const flowDiv = document.getElementById("flow-data");
+
+        const filteredPorts = Object.entries(ports).filter(([k]) =>
+          k.startsWith(`${sw}_`)
+        );
+        const filteredFlows = Object.entries(flows).filter(([k]) =>
+          k.startsWith(`${sw}_`)
+        );
+
+        // Update ports
+        const portRows = filteredPorts.map(([k, v]) => {
+          const time_now = v.Time;
+          const last = port_last_time[k] || {
+            time: time_now,
+            tx_bytes: v.tx_bytes,
+            tx_packets: v.tx_packets,
+          };
+          const dt = time_now - last.time || 1;
+          const throughput = ((v.tx_bytes - last.tx_bytes) / dt).toFixed(2);
+          const pps = ((v.tx_packets - last.tx_packets) / dt).toFixed(2);
+          
+          port_last_time[k] = {
+            time: time_now,
+            tx_bytes: v.tx_bytes,
+            tx_packets: v.tx_packets,
+          };
+
+          return `
+            <tr>
+              <td style="font-weight: bold;">${k}</td>
+              <td>${v.rx_packets.toLocaleString()}</td>
+              <td>${v.tx_packets.toLocaleString()}</td>
+              <td class="status-good">${throughput} B/s</td>
+              <td class="status-good">${pps} pkt/s</td>
+              <td style="font-size: 11px;">${new Date(v.Time * 1000).toLocaleTimeString()}</td>
+            </tr>
+          `;
+        });
+
+        portDiv.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Port</th>
+                <th>RX Packets</th>
+                <th>TX Packets</th>
+                <th>Throughput</th>
+                <th>Packets/s</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${portRows.join("")}
+            </tbody>
+          </table>
+        `;
+
+        // Update flows
+        const flowRows = filteredFlows.map(([k, v]) => {
+          const time_now = v.Time;
+          const last = flow_last_time[k] || { time: time_now };
+          flow_last_time[k] = { time: time_now };
+
+          return `
+            <tr>
+              <td style="font-weight: bold;">${k}</td>
+              <td>${v.Packets.toLocaleString()}</td>
+              <td>${v.Bytes.toLocaleString()}</td>
+              <td>${v.Duration}s</td>
+              <td class="${v.rx_errors > 0 ? 'status-error' : 'status-good'}">${v.rx_errors || 0}</td>
+              <td class="${v.rx_dropped > 0 ? 'status-warning' : 'status-good'}">${v.rx_dropped || 0}</td>
+              <td style="font-size: 11px;">${new Date(v.Time * 1000).toLocaleTimeString()}</td>
+            </tr>
+          `;
+        });
+
+        flowDiv.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Flow</th>
+                <th>Packets</th>
+                <th>Bytes</th>
+                <th>Duration</th>
+                <th>RX Errors</th>
+                <th>RX Dropped</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${flowRows.join("")}
+            </tbody>
+          </table>
+        `;
+      }
+
+      function getRttStatus(rtt) {
+        return rtt < 1000 ? 'status-good' : rtt < 2000 ? 'status-warning' : 'status-error';
+      }
+
+      function getLatencyStatus(latency) {
+        return latency < 500 ? 'status-good' : latency < 1000 ? 'status-warning' : 'status-error';
+      }
+
+      // Add some variation to mock data over time
+      function addDataVariation() {
+        // Slightly modify sensor values
+        const tempVariation = (Math.random() - 0.5) * 2;
+        const currentTemp = parseFloat(mockData.sensors['Temperature']);
+        mockData.sensors['Temperature'] = (currentTemp + tempVariation).toFixed(1) + '°C';
+
+        // Update packet counts
+        Object.values(mockData.ports).forEach(port => {
+          port.rx_packets += Math.floor(Math.random() * 100);
+          port.tx_packets += Math.floor(Math.random() * 100);
+          port.tx_bytes += Math.floor(Math.random() * 10000);
+          port.Time = Date.now() / 1000;
+        });
+
+        // Update flow data
+        Object.values(mockData.flows).forEach(flow => {
+          flow.Packets += Math.floor(Math.random() * 50);
+          flow.Bytes += Math.floor(Math.random() * 5000);
+          flow.Time = Date.now() / 1000;
+        });
+      }
+
+      // Initialize dashboard
+      fetchData();
+      
+      // Update every 3 seconds
+      setInterval(() => {
+        addDataVariation();
+        fetchData();
+      }, 3000);
+
+      // Handle window resize
+      window.addEventListener('resize', () => {
+        // Force recalculation of scroll areas
+        const scrollAreas = document.querySelectorAll('.scrollable-content, .table-container');
+        scrollAreas.forEach(area => {
+          area.style.height = 'auto';
+          setTimeout(() => {
+            area.style.height = '';
+          }, 10);
+        });
+      });
+    </script>
+  </body>
+</html>
