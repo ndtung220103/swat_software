@@ -105,12 +105,12 @@ def send_to_dashboard():
     while True:
         try:
             response = requests.post(
-                "http://localhost:5000/metrics", 
+                "http://localhost:5000/metrics",  # Địa chỉ Flask server
                 json=list_metric
             )
         except Exception as e:
             print("Error sending to dashboard:", e)
-        time.sleep(3)
+        time.sleep(0.5)
 
 if __name__ == '__main__':
     print("Khởi động bắt gói tin...")
