@@ -428,14 +428,12 @@
           await new Promise(resolve => setTimeout(resolve, 500));
 
           // In real implementation, replace with actual API calls:
-           [sensors, metrics, ports, flows] = await Promise.all([
+          let [sensors, metrics, ports, flows] = await Promise.all([
             fetch("http://127.0.0.1:5000/sensors").then((res) => res.json()),
             fetch("http://127.0.0.1:5000/metrics").then((res) => res.json()),
             fetch("http://127.0.0.1:5000/get_port_stats").then((res) => res.json()),
             fetch("http://127.0.0.1:5000/get_flow_stats").then((res) => res.json()),
           ]);
-
-          const { sensors, metrics, ports, flows } = mockData;
 
           updateSensors(sensors);
           updateMetrics(metrics);
