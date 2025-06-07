@@ -22,7 +22,9 @@ VALID_IP_TO_MAC = {
     '192.168.1.77': 'aa:aa:aa:aa:aa:aa'
 }
 
-sensor_data = {} 
+sensor_data = {}
+port_stats = {} 
+flow_stats = {} 
 
 # def send_metrics_to_dashboard(metrics):
 #     try:
@@ -190,22 +192,43 @@ class SwitchHandle (object):
 
 def _handle_PortStatsReceived(event):
     log.info("=== Port Stats Received from Switch %s ===", event.connection.dpid)
+    switch = int(event.connection.dpid)
     for stat in event.stats:
-        log.info("Port %d: RX %d pkts / %d bytes | TX %d pkts / %d bytes | Drops RX %d / TX %d | Errors RX %d / TX %d",
-                 stat.port_no,
-                 stat.rx_packets, stat.rx_bytes,
-                 stat.tx_packets, stat.tx_bytes,
-                 stat.rx_dropped, stat.tx_dropped,
-                 stat.rx_errors, stat.tx_errors)
+        key = {
+            switch : switch,
+            "Port" : stat.port_no
+        }
+        stats = {
+            "Time" : time.time(),
+            "rx_packets": stat.rx_packets,
+            "rx_bytes": stat.rx_bytes,
+            "rx_dropped": stat.rx_dropped,
+            "rx_errors": stat.rx_errors,
+            "tx_packets": stat.tx_packets,
+            "tx_bytes": stat.tx_bytes,
+            "tx_dropped": stat.tx_dropped,
+            "tx_errors": stat.tx_errors
+        }
+        port_stats[key] = stats
 
 def _handle_FlowStatsReceived(event):
     log.info(f"Flow stats from switch {event.connection.dpid}")
+    switch = int(event.connection.dpid)
     for flow in event.stats:
-        log.info("srcMac%s -> dstMac %s / srcIp %s -> dstIp %s: Packets %d | Bytes %d bytes | Duration  %ds",
-                 flow.match.nw_src,flow.match.nw_dst,
-                 flow.match.dl_src,flow.match.dl_src, 
-                 flow.packet_count,flow.byte_count, flow.duration_sec)
-        
+        key = {
+            switch : switch,
+            "srcMac" : flow.match.dl_src,
+            "dstMac" : flow.match.dl_src,
+            "srcMac" : flow.match.nw_src,
+            "dstMac" : flow.match.nw_dst
+        }
+        stats = {
+            "Time" : time.time(),
+            "Packets":  flow.packet_count,
+            "Bytes": flow.byte_count,
+            "Duration":  flow.duration_sec
+        }
+        flow_stats[key] = stats
 
 def poll_stats():
     for connection in core.openflow._connections.values():

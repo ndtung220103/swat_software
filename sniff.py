@@ -6,6 +6,8 @@ from threading import Thread
 from queue import Queue
 import datetime
 import time
+import requests
+import json
 import threading
 
 
@@ -78,7 +80,7 @@ def monitor():
 
                 RTT = (synack_latest - syn_earliest).total_seconds()
                 Latency = (syn_latest - syn_earliest).total_seconds()
-                NO = len(syn_times)
+                NUM = len(syn_times)
 
                 src_part, dst_part = conn_key.split(" -> ")
                 src_ip, src_port = src_part.split(":")
@@ -88,21 +90,26 @@ def monitor():
                 metrics = {
                     "Latency": Latency,
                     "RTT": RTT,
-                    "NO": NO
+                    "NUM": NUM
                 }
-                print(metrics)
                 if key not in list_metric:
                     list_metric[key] = metrics
                 else:
                     list_metric[key]["RTT"] = alpha * RTT + (1 - alpha) * list_metric[key]["RTT"]
                     list_metric[key]["Latency"] = alpha * Latency + (1 - alpha) * list_metric[key]["Latency"]
-                    list_metric[key]["NO"] = NO
+                    list_metric[key]["NUM"] = NUM
                 del syn_packets[conn_key]
                 del synack_packets[conn_key]
 
 def send_to_dashboard():
     while True:
-        print(list_metric)
+        try:
+            response = requests.post(
+                "http://localhost:5000/metrics", 
+                json=list_metric
+            )
+        except Exception as e:
+            print("Error sending to dashboard:", e)
         time.sleep(3)
 
 if __name__ == '__main__':

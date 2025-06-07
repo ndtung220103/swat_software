@@ -4,19 +4,22 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app) 
 
-data_store = {}  # key = "srcip->dstip", value = {...}
 sensor_value = {}
+metrics_store = {}
 
 @app.route('/metrics', methods=['POST'])
 def receive_metrics():
+    global metrics_store
     data = request.get_json()
-    key = f"{data['srcip']}->{data['dstip']}"
-    data_store[key] = data
-    return jsonify({"status": "ok"}), 200
+    if data:
+        metrics_store = data
+        print("Received metrics:", metrics_store)
+        return jsonify({"status": "success"}), 200
+    return jsonify({"error": "No data"}), 400
 
 @app.route('/metrics', methods=['GET'])
-def get_metrics():
-    return jsonify(list(data_store.values()))  
+def dashboard():
+    return jsonify(metrics_store)
 
 @app.route('/sensors', methods=['POST'])
 def receive_sensors():
