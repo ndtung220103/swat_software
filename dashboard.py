@@ -6,6 +6,36 @@ CORS(app)
 
 sensor_value = {}
 metrics_store = {}
+received_port_stats = {}
+received_flow_stats = {}
+
+@app.route('/port_stats', methods=['POST'])
+def receive_port_stats():
+    global received_port_stats
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data"}), 400
+    received_port_stats = data
+    print("[Dashboard] Received port stats.")
+    return jsonify({"status": "received port stats"}), 200
+
+@app.route('/flow_stats', methods=['POST'])
+def receive_flow_stats():
+    global received_flow_stats
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data"}), 400
+    received_flow_stats = data
+    print("[Dashboard] Received flow stats.")
+    return jsonify({"status": "received flow stats"}), 200
+
+@app.route('/get_port_stats')
+def get_port_stats():
+    return jsonify(received_port_stats)
+
+@app.route('/get_flow_stats')
+def get_flow_stats():
+    return jsonify(received_flow_stats)
 
 @app.route('/metrics', methods=['POST'])
 def receive_metrics():
@@ -13,7 +43,6 @@ def receive_metrics():
     data = request.get_json()
     if data:
         metrics_store = data
-        print("Received metrics:", metrics_store)
         return jsonify({"status": "success"}), 200
     return jsonify({"error": "No data"}), 400
 

@@ -210,6 +210,11 @@ def _handle_PortStatsReceived(event):
             "tx_errors": stat.tx_errors
         }
         port_stats[key] = stats
+    try:
+        requests.post("http://localhost:5000/port_stats", json=port_stats)
+        print("[+] Sent port stats to dashboard.")
+    except Exception as e:
+        print("[!] Failed to send port stats:", e)
 
 def _handle_FlowStatsReceived(event):
     log.info(f"Flow stats from switch {event.connection.dpid}")
@@ -229,6 +234,11 @@ def _handle_FlowStatsReceived(event):
             "Duration":  flow.duration_sec
         }
         flow_stats[key] = stats
+    try:
+        requests.post("http://localhost:5000/flow_stats", json=flow_stats)
+        print("[+] Sent flow stats to dashboard.")
+    except Exception as e:
+        print("[!] Failed to send flow stats:", e)
 
 def poll_stats():
     for connection in core.openflow._connections.values():
