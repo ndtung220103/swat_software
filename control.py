@@ -194,10 +194,7 @@ def _handle_PortStatsReceived(event):
     log.info("=== Port Stats Received from Switch %s ===", event.connection.dpid)
     switch = int(event.connection.dpid)
     for stat in event.stats:
-        key = {
-            switch : switch,
-            "Port" : stat.port_no
-        }
+        key = (switch, stat.port_no)
         stats = {
             "Time" : time.time(),
             "rx_packets": stat.rx_packets,
@@ -220,13 +217,7 @@ def _handle_FlowStatsReceived(event):
     log.info(f"Flow stats from switch {event.connection.dpid}")
     switch = int(event.connection.dpid)
     for flow in event.stats:
-        key = {
-            switch : switch,
-            "srcMac" : flow.match.dl_src,
-            "dstMac" : flow.match.dl_src,
-            "srcMac" : flow.match.nw_src,
-            "dstMac" : flow.match.nw_dst
-        }
+        key = (switch, str(flow.match.dl_src), str(flow.match.dl_dst), str(flow.match.nw_src), str(flow.match.nw_dst))
         stats = {
             "Time" : time.time(),
             "Packets":  flow.packet_count,
