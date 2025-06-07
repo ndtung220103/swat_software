@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SWaT Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 20px; }
+        .container { display: grid; grid-template-columns: 1fr 2fr 2fr; gap: 10px; }
+        .section { border: 1px solid #000; background-color: #fff; padding: 10px; min-height: 200px; }
+        .section h3 { background-color: #baf1c1; padding: 5px; margin: -10px -10px 10px -10px; text-align: center; }
+        .section .sub-header { background-color: #f4aeb2; padding: 5px; text-align: center; font-weight: bold; }
+        .button-group { text-align: center; margin: 5px 0; }
+        .button-group button { margin: 0 5px; padding: 5px 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 5px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Alerts and Sensor Info -->
+        <div class="section">
+            <h3>Cảnh báo</h3>
+            <div id="alerts"></div>
+            <h3>Thông số sensors</h3>
+            <div id="sensors"></div>
+        </div>
+
+        <!-- Sniff Info -->
+        <div class="section">
+            <h3>SNIFF</h3>
+            <table>
+                <thead class="sub-header">
+                    <tr>
+                        <th>src-&gt;dst</th>
+                        <th>RTT</th>
+                        <th>Latency</th>
+                        <th>NUM</th>
+                    </tr>
+                </thead>
+                <tbody id="sniff-table"></tbody>
+            </table>
+        </div>
+
+        <!-- Switch Stats -->
+        <div class="section">
+            <div class="button-group">
+                <button onclick="selectSwitch(1)">SWITCH1</button>
+                <button onclick="selectSwitch(2)">SWITCH2</button>
+            </div>
+            <div>
+                <div class="sub-header">PORT</div>
+                <div id="port-data"></div>
+            </div>
+            <div>
+                <div class="sub-header">FLOW</div>
+                <div id="flow-data"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSwitch = 1;
+
+        async function fetchData() {
+            const [sensors, metrics, ports, flows] = await Promise.all([
+                fetch('/sensors').then(res => res.json()),
+                fetch('/metrics').then(res => res.json()),
+                fetch('/get_port_stats').then(res => res.json()),
+                fetch('/get_flow_stats').then(res => res.json())
+            ]);
+
+            // Sensors
+            document.getElementById('sensors').innerHTML =
+                Object.entries(sensors).map(([k,v]) => `<div><strong>${k}</strong>: ${v}</div>`).join('');
+
+            // Metrics
+            const sniffTable = document.getElementById('sniff-table');
+            sniffTable.innerHTML = '';
+            for (const [key, val] of Object.entries(metrics)) {
+                const row = `<tr><td>${key}</td><td>${val.RTT.toFixed(2)}</td><td>${val.Latency.toFixed(2)}</td><td>${val.NUM}</td></tr>`;
+                sniffTable.innerHTML += row;
+            }
+
+            // Port + Flow Filter by Switch
+            showSwitchStats(currentSwitch, ports, flows);
+        }
+
+        function selectSwitch(sw) {
+            currentSwitch = sw;
+            fetch('/get_port_stats').then(res => res.json()).then(ports => {
+                fetch('/get_flow_stats').then(res => res.json()).then(flows => {
+                    showSwitchStats(sw, ports, flows);
+                });
+            });
+        }
+
+        function showSwitchStats(sw, ports, flows) {
+            const portDiv = document.getElementById('port-data');
+            const flowDiv = document.getElementById('flow-data');
+            portDiv.innerHTML = '';
+            flowDiv.innerHTML = '';
+
+            const filteredPorts = Object.entries(ports).filter(([k]) => k.startsWith(`${sw}_`));
+            const filteredFlows = Object.entries(flows).filter(([k]) => k.startsWith(`${sw}_`));
+
+            portDiv.innerHTML = '<table><tr><th>Port</th><th>rx_packets</th><th>tx_packets</th></tr>' +
+                filteredPorts.map(([k, v]) => `<tr><td>${k}</td><td>${v.rx_packets}</td><td>${v.tx_packets}</td></tr>`).join('') + '</table>';
+
+            flowDiv.innerHTML = '<table><tr><th>Flow</th><th>Packets</th><th>Bytes</th><th>Duration</th></tr>' +
+                filteredFlows.map(([k, v]) => `<tr><td>${k}</td><td>${v.Packets}</td><td>${v.Bytes}</td><td>${v.Duration}</td></tr>`).join('') + '</table>';
+        }
+
+        // Refresh every 3s
+        setInterval(fetchData, 3000);
+        fetchData();
+    </script>
+</body>
+</html>
