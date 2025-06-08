@@ -155,7 +155,8 @@ def recive_values():
     time.sleep(0.5)
     print("IM here")
     while True:
-        if SENSORKEY.qsize() > 2:
+        #if SENSORKEY.qsize() > 2:
+        if 2>1 :
             conn_key = SENSORKEY.get()
             print(conn_key)
             if conn_key in key_to_tag and conn_key in key_to_value:

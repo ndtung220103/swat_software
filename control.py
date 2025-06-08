@@ -109,7 +109,11 @@ class SwitchHandle (object):
                         data = {
                             "mess1": message
                         }
-                        send_mess_to_dashboard(data)
+                        try:
+                            requests.post("http://localhost:5000/mess", json=data)
+                            print("SEND MESS TO DASHBOARD")
+                        except Exception as e:
+                            print("[!] Failed to send port stats:", e)
                     # External attack
                     else:
                         message = "%d external ap detected: %s MAC tries to impersonate %s IP with %s MAC" % (
