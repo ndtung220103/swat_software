@@ -79,14 +79,13 @@ def detect():
 
                 elif tcp_layer.sport == 44818:
                     try:
-                        data_payload = payload[44:]  # điều chỉnh offset nếu cần
-                        print("Dữ liệu trả về (hex):", data_payload.hex())
+                        data_payload = payload[44:] 
                         marker = payload[44:46]
                         if marker == b'\xca\x00' and len(payload) >= 50:
                             # Số thực float32
                             value = struct.unpack('<f', payload[46:50])[0]  # '<f' là little-endian float
-                            print("Giá trị float:", value)
-                            key_to_value[reverse_key] = value
+                            if reverse_key in key_to_tag:
+                                key_to_value[reverse_key] = value
 
                         # elif marker == b'\xc3\x00' and len(payload) >= 50:
                         #     # Số nguyên int32
