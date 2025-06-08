@@ -57,8 +57,9 @@ def detect():
 
             # bắt gói tin gửi yêu cầu đọc và gửi dữ liệu
             if payload[0] == 0x6f:  
-
                 if tcp_layer.dport == 44818:
+                    print(packet.summary())
+                    print("time: ",timestamp)
                     if conn_key not in request_packets:
                         request_packets[conn_key] = []
                         KEYMATCH.put(conn_key)
@@ -76,6 +77,8 @@ def detect():
                         print("Không thể trích xuất tag:", e)
 
                 elif tcp_layer.sport == 44818:
+                    print(packet.summary())
+                    print("time: ",timestamp)
                     if reverse_key not in response_packets:
                         response_packets[reverse_key] = []
                     response_packets[reverse_key].append(timestamp)
@@ -172,6 +175,7 @@ def send_to_dashboard():
             print("Error sending to dashboard:", e)
 
         try:
+            print(sensors_value)
             requests.post(
                 "http://localhost:5000/sensors",  
                 json=sensors_value
