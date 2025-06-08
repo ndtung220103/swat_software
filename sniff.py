@@ -165,7 +165,7 @@ def recive_value():
             conn_key = SENSORKEY.get()
             if conn_key in key_to_tag and conn_key in key_to_value:
                 tag = key_to_tag[conn_key]
-                value = key_to_value[value]
+                value = key_to_value[conn_key]
                 sensors_value[tag] = value
                 del key_to_tag[conn_key]
                 del key_to_value[conn_key]
