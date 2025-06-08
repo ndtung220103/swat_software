@@ -58,8 +58,8 @@ def detect():
             # bắt gói tin gửi yêu cầu đọc và gửi dữ liệu
             if payload[0] == 0x6f:  
                 if tcp_layer.dport == 44818:
-                    print(packet.summary())
-                    print("time: ",timestamp)
+                    #print(packet.summary())
+                    #print("time: ",timestamp)
                     if conn_key not in request_packets:
                         request_packets[conn_key] = []
                         KEYMATCH.put(conn_key)
@@ -77,8 +77,8 @@ def detect():
                         print("Không thể trích xuất tag:", e)
 
                 elif tcp_layer.sport == 44818:
-                    print(packet.summary())
-                    print("time: ",timestamp)
+                    #print(packet.summary())
+                    #print("time: ",timestamp)
                     if reverse_key not in response_packets:
                         response_packets[reverse_key] = []
                     response_packets[reverse_key].append(timestamp)
@@ -161,6 +161,7 @@ def recive_value():
                 tag = key_to_tag[conn_key]
                 value = key_to_value[conn_key]
                 sensors_value[tag] = value
+                print(sensors_value)
                 del key_to_tag[conn_key]
                 del key_to_value[conn_key]
 
