@@ -48,39 +48,38 @@ def detect():
     while True:
         packet = PACKETS.get()
         if packet.haslayer(TCP) and packet.haslayer(IP) and Raw in packet:
+            timestamp = datetime.datetime.fromtimestamp(packet.time)
             ip_layer = packet[IP]
             tcp_layer = packet[TCP]
             payload = bytes (packet [Raw]) 
+            conn_key = f"{ip_layer.src}:{tcp_layer.sport} -> {ip_layer.dst}:{tcp_layer.dport}"
+            reverse_key = f"{ip_layer.dst}:{tcp_layer.dport} -> {ip_layer.src}:{tcp_layer.sport}"
+
+            if conn_key not in request_packets:
+                request_packets[conn_key] = []
+                KEYMATCH.put(conn_key)
+            request_packets[conn_key].append(timestamp)
+
+            if reverse_key not in response_packets:
+                response_packets[reverse_key] = []
+            response_packets[reverse_key].append(timestamp)
             # bắt gói tin gửi yêu cầu đọc và gửi dữ liệu
             if payload[0] == 0x6f:  
-                timestamp = datetime.datetime.fromtimestamp(packet.time)
-                # Định danh kết nối
-                conn_key = f"{ip_layer.src}:{tcp_layer.sport} -> {ip_layer.dst}:{tcp_layer.dport}"
-                reverse_key = f"{ip_layer.dst}:{tcp_layer.dport} -> {ip_layer.src}:{tcp_layer.sport}"
-
                 if tcp_layer.dport == 44818:
-                    tag = ''
                     try:
                         tag_start = payload.find(b'LIT')
                         if tag_start != -1:
                             tag_end = payload.find(b'\x00', tag_start)
                             tag = payload[tag_start:tag_end].decode('ascii')
-                            print("Tag yêu cầu đọc:", tag)
                             if conn_key not in request_packets:
                                 SENSORKEY.put(conn_key)
                             key_to_tag[conn_key] = str(tag)
                     except Exception as e:
                         print("Không thể trích xuất tag:", e)
 
-                    if conn_key not in request_packets:
-                        request_packets[conn_key] = []
-                        KEYMATCH.put(conn_key)
-                    request_packets[conn_key].append(timestamp)
 
                 elif tcp_layer.sport == 44818:
                     try:
-                        data_payload = payload[44:]  # điều chỉnh offset nếu cần
-                        print("Dữ liệu trả về (hex):", data_payload.hex())
                         marker = payload[44:46]
                         if marker == b'\xca\x00' and len(payload) >= 50:
                             # Số thực float32
@@ -97,9 +96,6 @@ def detect():
                     except Exception as e:
                         print("Không thể trích xuất dữ liệu:", e)
 
-                    if reverse_key not in response_packets:
-                        response_packets[reverse_key] = []
-                    response_packets[reverse_key].append(timestamp)
 
             # ip_layer = packet[IP]
             # tcp_layer = packet[TCP]

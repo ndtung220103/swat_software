@@ -451,17 +451,6 @@
         const alertsDiv = document.getElementById("alerts");
         const alerts = [];
 
-        // Check for alert conditions
-        const temp = parseFloat(sensors['Temperature']);
-        if (temp > 30) {
-          alerts.push('🌡️ High temperature detected!');
-        }
-
-        const pressure = parseFloat(sensors['Pressure']);
-        if (pressure > 105) {
-          alerts.push('⚠️ High pressure warning!');
-        }
-
         if (alerts.length > 0) {
           alertsDiv.innerHTML = alerts.map(alert => 
             `<div class="alert-item">${alert}</div>`
