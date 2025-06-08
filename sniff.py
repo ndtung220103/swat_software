@@ -16,6 +16,8 @@ KEYMATCH = Queue()
 
 syn_packets = defaultdict(list)
 synack_packets = defaultdict(list)
+request_packets = defaultdict(list)
+response_packets = defaultdict(list)
 list_metric = {}
 alpha = 0.2
 def is_if_up(ifname):
@@ -44,6 +46,7 @@ def detect():
     while True:
         packet = PACKETS.get()
         if packet.haslayer(TCP) and packet.haslayer(IP):
+            print(packet.summary())
             ip_layer = packet[IP]
             tcp_layer = packet[TCP]
             flags = tcp_layer.flags
