@@ -416,7 +416,7 @@
           await new Promise((resolve) => setTimeout(resolve, 500));
 
           // In real implementation, replace with actual API calls:
-          let [sensors, metrics, ports, flows] = await Promise.all([
+          let [sensors, metrics, ports, flows, mess] = await Promise.all([
             fetch("http://127.0.0.1:5000/sensors").then((res) => res.json()),
             fetch("http://127.0.0.1:5000/metrics").then((res) => res.json()),
             fetch("http://127.0.0.1:5000/get_port_stats").then((res) =>
@@ -426,10 +426,12 @@
               res.json()
             ),
           ]);
-
+          
+          for (const [key, m] of Object.entries(mess)){
+              updateAlerts(key,m)
+          }
           updateSensors(sensors);
           updateMetrics(metrics);
-          updateAlerts("1","My name is Tung");
           showSwitchStats(currentSwitch, ports, flows);
         } catch (error) {
           console.error("Error fetching data:", error);

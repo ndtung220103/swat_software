@@ -8,6 +8,7 @@ sensor_value = {}
 metrics_store = {}
 received_port_stats = {}
 received_flow_stats = {}
+list_mess = {}
 
 @app.route('/port_stats', methods=['POST'])
 def receive_port_stats():
@@ -60,6 +61,17 @@ def receive_sensors():
 @app.route('/sensors', methods=['GET'])
 def get_sensors():
     return jsonify(sensor_value)  
+
+@app.route('/mess', methods=['POST'])
+def receive_mess():
+    data = request.get_json()
+    list_mess.update(data)
+    print(list_mess)
+    return jsonify({"status": "ok"}), 200
+
+@app.route('/mess', methods=['GET'])
+def get_mess():
+    return jsonify(list_mess) 
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

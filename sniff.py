@@ -163,6 +163,7 @@ def recive_value():
                 sensors_value[tag] = value
                 print(tag)
                 print(value)
+                print(sensors_value)
                 del key_to_tag[conn_key]
                 del key_to_value[conn_key]
         time.sleep(0.1)
@@ -178,7 +179,6 @@ def send_to_dashboard():
             print("Error sending to dashboard:", e)
 
         try:
-            print(sensors_value)
             requests.post(
                 "http://localhost:5000/sensors",  
                 json=sensors_value

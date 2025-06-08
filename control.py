@@ -97,18 +97,30 @@ class SwitchHandle (object):
                         for key, value in VALID_IP_TO_MAC.items():
                             if value == sender_mac:
                                 attacker_ip = key
-                        log.warning(
-                            "%d internal ap detected: %s MAC with %s IP "
-                            "tries to impersonate %s IP with %s MAC" % (
-                                event.dpid, sender_mac, attacker_ip,
-                                sender_ip,  VALID_IP_TO_MAC[sender_ip]))
+                        # log.warning(
+                        #     "%d internal ap detected: %s MAC with %s IP "
+                        #     "tries to impersonate %s IP with %s MAC" % (
+                        #         event.dpid, sender_mac, attacker_ip,
+                        #         sender_ip,  VALID_IP_TO_MAC[sender_ip]))
+                        message = "%d internal ap detected: %s MAC with %s IP tries to impersonate %s IP with %s MAC" % (
+                                             event.dpid, sender_mac, attacker_ip, sender_ip, VALID_IP_TO_MAC[sender_ip])
+                        data = {
+                            "mess1": message
+                        }
+                        send_mess_to_dashboard(data)
                     # External attack
                     else:
-                        log.warning(
-                            "%d external ap detected: %s MAC tries to "
-                            "impersonate %s IP with %s MAC" % (
-                                event.dpid, sender_mac, sender_ip,
-                                 VALID_IP_TO_MAC[sender_ip]))
+                        message = "%d external ap detected: %s MAC tries to impersonate %s IP with %s MAC" % (
+                                            event.dpid, sender_mac, sender_ip, VALID_IP_TO_MAC[sender_ip])
+                        data = {
+                            "mess2": message
+                        }
+                        send_mess_to_dashboard(data)
+                        # log.warning(
+                        #     "%d external ap detected: %s MAC tries to "
+                        #     "impersonate %s IP with %s MAC" % (
+                        #         event.dpid, sender_mac, sender_ip,
+                        #          VALID_IP_TO_MAC[sender_ip]))
         
         if packet.dst.is_multicast:
             flood()
