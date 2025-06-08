@@ -14,8 +14,6 @@ import threading
 PACKETS = Queue()
 KEYMATCH = Queue()
 
-syn_packets = defaultdict(list)
-synack_packets = defaultdict(list)
 request_packets = defaultdict(list)
 response_packets = defaultdict(list)
 list_metric = {}
@@ -46,44 +44,63 @@ def detect():
     while True:
         packet = PACKETS.get()
         if packet.haslayer(TCP) and packet.haslayer(IP):
-            print(packet.summary())
             ip_layer = packet[IP]
             tcp_layer = packet[TCP]
             flags = tcp_layer.flags
-            timestamp = datetime.datetime.fromtimestamp(packet.time)
+            if Raw in packet and flags == "PA":
+                timestamp = datetime.datetime.fromtimestamp(packet.time)
+                # Định danh kết nối
+                conn_key = f"{ip_layer.src}:{tcp_layer.sport} -> {ip_layer.dst}:{tcp_layer.dport}"
+                reverse_key = f"{ip_layer.dst}:{tcp_layer.dport} -> {ip_layer.src}:{tcp_layer.sport}"
 
-            # Định danh kết nối
-            conn_key = f"{ip_layer.src}:{tcp_layer.sport} -> {ip_layer.dst}:{tcp_layer.dport}"
-            reverse_key = f"{ip_layer.dst}:{tcp_layer.dport} -> {ip_layer.src}:{tcp_layer.sport}"
+                if tcp_layer.dport == 44818:
+                    if conn_key not in request_packets:
+                        request_packets[conn_key] = []
+                        KEYMATCH.put(conn_key)
+                    request_packets[conn_key].append(timestamp)
 
-            if flags == 'S':
-                if conn_key not in syn_packets:
-                    syn_packets[conn_key] = []
-                    KEYMATCH.put(conn_key)
-                syn_packets[conn_key].append(timestamp)
+                elif tcp_layer.sport == 44818:
+                    if reverse_key not in response_packets:
+                        response_packets[reverse_key] = []
+                    response_packets[reverse_key].append(timestamp)
 
-            elif flags == 'SA':
-                if reverse_key not in synack_packets:
-                    synack_packets[reverse_key] = []
-                synack_packets[reverse_key].append(timestamp)
+            # ip_layer = packet[IP]
+            # tcp_layer = packet[TCP]
+            # flags = tcp_layer.flags
+            # timestamp = datetime.datetime.fromtimestamp(packet.time)
+
+            # # Định danh kết nối
+            # conn_key = f"{ip_layer.src}:{tcp_layer.sport} -> {ip_layer.dst}:{tcp_layer.dport}"
+            # reverse_key = f"{ip_layer.dst}:{tcp_layer.dport} -> {ip_layer.src}:{tcp_layer.sport}"
+
+            # if flags == 'S':
+            #     if conn_key not in request_packets:
+            #         request_packets[conn_key] = []
+            #         KEYMATCH.put(conn_key)
+            #     request_packets[conn_key].append(timestamp)
+
+            # elif flags == 'SA':
+            #     if reverse_key not in response_packets:
+            #         response_packets[reverse_key] = []
+            #     response_packets[reverse_key].append(timestamp)
 
 def monitor():
     time.sleep(3)
     while True:
         if KEYMATCH.qsize() > 5:
             conn_key = KEYMATCH.get()
-            if conn_key in syn_packets and conn_key in synack_packets:
-                syn_times = syn_packets[conn_key]
-                synack_times = synack_packets[conn_key]
+            if conn_key in request_packets and conn_key in response_packets:
+                request_times = request_packets[conn_key]
+                response_times = response_packets[conn_key]
 
-                syn_earliest = min(syn_times)
-                synack_latest = max(synack_times)
-                syn_latest = max(syn_times)
-                synack_earliest = min(synack_times)
+                request_earliest = min(request_times)
+                response_latest = max(response_times)
+                request_latest = max(request_times)
+                response_earliest = min(response_times)
 
-                RTT = (synack_latest - syn_earliest).total_seconds()
-                Latency = (syn_latest - syn_earliest).total_seconds()
-                NUM = len(syn_times)
+                RTT = (response_latest -request_earliest).total_seconds()
+                Latency = (request_latest -request_earliest).total_seconds()
+                NUM = len(request_times)
 
                 src_part, dst_part = conn_key.split(" -> ")
                 src_ip, src_port = src_part.split(":")
@@ -101,8 +118,8 @@ def monitor():
                     list_metric[key]["RTT"] = alpha * RTT + (1 - alpha) * list_metric[key]["RTT"]
                     list_metric[key]["Latency"] = alpha * Latency + (1 - alpha) * list_metric[key]["Latency"]
                     list_metric[key]["NUM"] = NUM
-                del syn_packets[conn_key]
-                del synack_packets[conn_key]
+                del request_packets[conn_key]
+                del response_packets[conn_key]
 
 def send_to_dashboard():
     while True:
