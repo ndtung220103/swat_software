@@ -97,11 +97,11 @@ class SwitchHandle (object):
                         for key, value in VALID_IP_TO_MAC.items():
                             if value == sender_mac:
                                 attacker_ip = key
-                        # log.warning(
-                        #     "%d internal ap detected: %s MAC with %s IP "
-                        #     "tries to impersonate %s IP with %s MAC" % (
-                        #         event.dpid, sender_mac, attacker_ip,
-                        #         sender_ip,  VALID_IP_TO_MAC[sender_ip]))
+                        log.warning(
+                            "%d internal ap detected: %s MAC with %s IP "
+                            "tries to impersonate %s IP with %s MAC" % (
+                                event.dpid, sender_mac, attacker_ip,
+                                sender_ip,  VALID_IP_TO_MAC[sender_ip]))
                         message = "%d internal ap detected: %s MAC with %s IP tries to impersonate %s IP with %s MAC" % (
                                              event.dpid, sender_mac, attacker_ip, sender_ip, VALID_IP_TO_MAC[sender_ip])
                         data = {

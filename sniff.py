@@ -151,8 +151,9 @@ def monitor():
                 del request_packets[conn_key]
                 del response_packets[conn_key]
 
-def recive_value():
+def recive_values():
     time.sleep(0.5)
+    print("IM here")
     while True:
         if SENSORKEY.qsize() > 2:
             conn_key = SENSORKEY.get()
@@ -193,7 +194,7 @@ if __name__ == '__main__':
     threading.Thread(target=detect, daemon=True).start()
     threading.Thread(target=monitor, daemon=True).start()
     threading.Thread(target=send_to_dashboard, daemon=True).start()
-    threading.Thread(target=recive_value, daemon=True).start()
+    threading.Thread(target=recive_values, daemon=True).start()
 
     while True:
         time.sleep(1)
