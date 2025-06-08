@@ -56,7 +56,8 @@ def detect():
             reverse_key = f"{ip_layer.dst}:{tcp_layer.dport} -> {ip_layer.src}:{tcp_layer.sport}"
 
             # bắt gói tin gửi yêu cầu đọc và gửi dữ liệu
-            if payload[0] == 0x6f:  
+            if payload[0] == 0x6f: 
+                tag ='' 
                 if tcp_layer.dport == 44818:
                     #print(packet.summary())
                     #print("time: ",timestamp)
@@ -69,7 +70,6 @@ def detect():
                         if tag_start != -1:
                             tag_end = payload.find(b'\x00', tag_start)
                             tag = payload[tag_start:tag_end].decode('ascii')
-                            print(tag)
                             if conn_key not in request_packets:
                                 SENSORKEY.put(conn_key)
                             key_to_tag[conn_key] = str(tag)
@@ -87,7 +87,6 @@ def detect():
                         if marker == b'\xca\x00' and len(payload) >= 50:
                             # Số thực float32
                             value = struct.unpack('<f', payload[46:50])[0]  # '<f' là little-endian float
-                            print(value)
                             if reverse_key in key_to_tag:
                                 key_to_value[reverse_key] = value
 
@@ -159,7 +158,9 @@ def recive_value():
             conn_key = SENSORKEY.get()
             if conn_key in key_to_tag and conn_key in key_to_value:
                 tag = key_to_tag[conn_key]
+                print(tag)
                 value = key_to_value[conn_key]
+                print(value)
                 sensors_value[tag] = value
                 print(sensors_value)
                 del key_to_tag[conn_key]
