@@ -85,7 +85,6 @@ def detect():
                         if marker == b'\xca\x00' and len(payload) >= 50:
                             # Số thực float32
                             value = struct.unpack('<f', payload[46:50])[0]  # '<f' là little-endian float
-                            print("Giá trị float:", value)
                             if reverse_key in key_to_tag:
                                 key_to_value[reverse_key] = value
 
@@ -196,5 +195,7 @@ if __name__ == '__main__':
     threading.Thread(target=detect, daemon=True).start()
     threading.Thread(target=monitor, daemon=True).start()
     threading.Thread(target=send_to_dashboard, daemon=True).start()
+    threading.Thread(target=recive_value, daemon=True).start()
+
     while True:
         time.sleep(1)
