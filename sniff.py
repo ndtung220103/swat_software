@@ -46,11 +46,7 @@ def detect():
         if packet.haslayer(TCP) and packet.haslayer(IP) and Raw in packet:
             ip_layer = packet[IP]
             tcp_layer = packet[TCP]
-            print(packet.summary())
-            payloadhex = bytes (packet [Raw]).hex()
-            print("Payload hex: ", payloadhex)
             payload = bytes (packet [Raw]) 
-            print("Payload bytes: ", payload)
             # bắt gói tin gửi yêu cầu đọc và gửi dữ liệu
             if payload[0] == 0x6f:  
                 timestamp = datetime.datetime.fromtimestamp(packet.time)
@@ -77,9 +73,24 @@ def detect():
                     try:
                         data_payload = payload[44:]  # điều chỉnh offset nếu cần
                         print("Dữ liệu trả về (hex):", data_payload.hex())
+                        marker = payload[44:46]
+                        if marker == b'\xca\x00' and len(payload) >= 50:
+                            # Số thực float32
+                            value = struct.unpack('<f', payload[46:50])[0]  # '<f' là little-endian float
+                            print("Giá trị float:", value)
+                            return value
+
+                        elif marker == b'\xc3\x00' and len(payload) >= 50:
+                            # Số nguyên int32
+                            value = struct.unpack('<i', payload[46:50])[0]  # '<i' là little-endian signed int
+                            print("Giá trị int:", value)
+                            return value
+                        else:
+                            print("Không nhận diện được định dạng payload hoặc không đủ dữ liệu.")
+                            return None
                     except Exception as e:
                         print("Không thể trích xuất dữ liệu:", e)
-                        
+
                     if reverse_key not in response_packets:
                         response_packets[reverse_key] = []
                     response_packets[reverse_key].append(timestamp)
