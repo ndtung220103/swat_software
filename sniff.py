@@ -49,6 +49,10 @@ def detect():
             flags = tcp_layer.flags
             if Raw in packet and flags == "PA":
                 print(packet.summary())
+                payloadhex = bytes (packet [Raw]).hex()
+                print("Payload hex: ", payloadhex)
+                payload = bytes (packet [Raw])
+                print("Payload bytes: ", payload)
                 timestamp = datetime.datetime.fromtimestamp(packet.time)
                 # Định danh kết nối
                 conn_key = f"{ip_layer.src}:{tcp_layer.sport} -> {ip_layer.dst}:{tcp_layer.dport}"
