@@ -156,15 +156,16 @@ def recive_value():
     while True:
         if SENSORKEY.qsize() > 2:
             conn_key = SENSORKEY.get()
+            print(conn_key)
             if conn_key in key_to_tag and conn_key in key_to_value:
                 tag = key_to_tag[conn_key]
-                print(tag)
                 value = key_to_value[conn_key]
-                print(value)
                 sensors_value[tag] = value
-                print(sensors_value)
+                print(tag)
+                print(value)
                 del key_to_tag[conn_key]
                 del key_to_value[conn_key]
+        time.sleep(0.1)
 
 def send_to_dashboard():
     while True:

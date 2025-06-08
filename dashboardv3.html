@@ -12,7 +12,7 @@
       }
 
       body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         background-color: #f5f7fa;
         padding: 20px;
         height: 100vh;
@@ -249,11 +249,11 @@
           grid-template-rows: auto auto auto;
           gap: 10px;
         }
-        
+
         .left-column {
           flex-direction: row;
         }
-        
+
         .alerts-section,
         .sensors-section {
           flex: 1;
@@ -300,14 +300,24 @@
       }
 
       @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
       }
 
       /* Status Indicators */
-      .status-good { color: #38a169; }
-      .status-warning { color: #d69e2e; }
-      .status-error { color: #e53e3e; }
+      .status-good {
+        color: #38a169;
+      }
+      .status-warning {
+        color: #d69e2e;
+      }
+      .status-error {
+        color: #e53e3e;
+      }
     </style>
   </head>
   <body>
@@ -348,8 +358,7 @@
                 <th>NUM</th>
               </tr>
             </thead>
-            <tbody id="sniff-table">
-            </tbody>
+            <tbody id="sniff-table"></tbody>
           </table>
         </div>
       </div>
@@ -357,10 +366,18 @@
       <!-- Right Column: Switch Stats -->
       <div class="section right-column">
         <div class="button-group">
-          <button class="switch-button active" onclick="selectSwitch(1)" id="switch1-btn">
+          <button
+            class="switch-button active"
+            onclick="selectSwitch(1)"
+            id="switch1-btn"
+          >
             🔄 SWITCH1
           </button>
-          <button class="switch-button" onclick="selectSwitch(2)" id="switch2-btn">
+          <button
+            class="switch-button"
+            onclick="selectSwitch(2)"
+            id="switch2-btn"
+          >
             🔄 SWITCH2
           </button>
         </div>
@@ -391,51 +408,59 @@
       let currentSwitch = 1;
       const port_last_time = {};
       const flow_last_time = {};
+      const currentAlerts = {};
 
       async function fetchData() {
         try {
           // Simulate API delay
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 500));
 
           // In real implementation, replace with actual API calls:
           let [sensors, metrics, ports, flows] = await Promise.all([
             fetch("http://127.0.0.1:5000/sensors").then((res) => res.json()),
             fetch("http://127.0.0.1:5000/metrics").then((res) => res.json()),
-            fetch("http://127.0.0.1:5000/get_port_stats").then((res) => res.json()),
-            fetch("http://127.0.0.1:5000/get_flow_stats").then((res) => res.json()),
+            fetch("http://127.0.0.1:5000/get_port_stats").then((res) =>
+              res.json()
+            ),
+            fetch("http://127.0.0.1:5000/get_flow_stats").then((res) =>
+              res.json()
+            ),
           ]);
 
           updateSensors(sensors);
           updateMetrics(metrics);
-          updateAlerts(sensors);
+          updateAlerts("1","My name is Tung");
           showSwitchStats(currentSwitch, ports, flows);
-
         } catch (error) {
-          console.error('Error fetching data:', error);
-          document.getElementById("sensors").innerHTML = '<div style="color: red;">❌ Connection Error</div>';
+          console.error("Error fetching data:", error);
+          document.getElementById("sensors").innerHTML =
+            '<div style="color: red;">❌ Connection Error</div>';
         }
       }
 
       function updateSensors(sensors) {
         const sensorsDiv = document.getElementById("sensors");
         sensorsDiv.innerHTML = Object.entries(sensors)
-          .map(([key, value]) => `
+          .map(
+            ([key, value]) => `
             <div class="sensor-item">
               <div class="sensor-label">${key}</div>
               <div class="sensor-value">${value}</div>
             </div>
-          `).join("");
+          `
+          )
+          .join("");
       }
 
       function updateMetrics(metrics) {
         const sniffTable = document.getElementById("sniff-table");
         sniffTable.innerHTML = "";
-        
+
         for (const [key, val] of Object.entries(metrics)) {
           const rtt = (val.RTT * 1e6).toFixed(2);
           const latency = (val.Latency * 1e6).toFixed(2);
-          
-          const row = document.createElement('tr');
+
+          const row = document.createElement("tr");
           row.innerHTML = `
             <td style="font-family: monospace; font-size: 12px;">${key}</td>
             <td class="${getRttStatus(rtt)}">${rtt}</td>
@@ -446,26 +471,50 @@
         }
       }
 
-      function updateAlerts(sensors) {
+      function updateAlerts(alert_id, mess) {
         const alertsDiv = document.getElementById("alerts");
-        const alerts = [];
+        if (!(alert_id in currentAlerts)) {
+          currentAlerts[alert_id] = mess;
+        }
+        renderAlerts();
+      }
 
-        if (alerts.length > 0) {
-          alertsDiv.innerHTML = alerts.map(alert => 
-            `<div class="alert-item">${alert}</div>`
-          ).join("");
+      function removeAlert(alert_id) {
+        delete currentAlerts[alert_id];
+        renderAlerts();
+      }
+
+      function renderAlerts() {
+        const alertsDiv = document.getElementById("alerts");
+        const alertEntries = Object.entries(currentAlerts);
+
+        if (alertEntries.length > 0) {
+          alertsDiv.innerHTML = alertEntries
+            .map(
+              ([id, msg]) =>
+                `<div class="alert-item">
+         ⚠️ ${msg}
+         <button onclick="removeAlert('${id}')" style="margin-left: 10px;">❌</button>
+       </div>`
+            )
+            .join("");
         } else {
-          alertsDiv.innerHTML = '<div class="no-alerts">✅ Không có cảnh báo.</div>';
+          alertsDiv.innerHTML =
+            '<div class="no-alerts">✅ Không có cảnh báo.</div>';
         }
       }
 
       function selectSwitch(sw) {
         currentSwitch = sw;
-        
+
         // Update button states
-        document.getElementById('switch1-btn').classList.toggle('active', sw === 1);
-        document.getElementById('switch2-btn').classList.toggle('active', sw === 2);
-        
+        document
+          .getElementById("switch1-btn")
+          .classList.toggle("active", sw === 1);
+        document
+          .getElementById("switch2-btn")
+          .classList.toggle("active", sw === 2);
+
         fetchData();
       }
 
@@ -491,7 +540,7 @@
           const dt = time_now - last.time || 1;
           const throughput = ((v.tx_bytes - last.tx_bytes) / dt).toFixed(2);
           const pps = ((v.tx_packets - last.tx_packets) / dt).toFixed(2);
-          
+
           port_last_time[k] = {
             time: time_now,
             tx_bytes: v.tx_bytes,
@@ -505,7 +554,9 @@
               <td>${v.tx_packets.toLocaleString()}</td>
               <td class="status-good">${throughput} B/s</td>
               <td class="status-good">${pps} pkt/s</td>
-              <td style="font-size: 11px;">${new Date(v.Time * 1000).toLocaleTimeString()}</td>
+              <td style="font-size: 11px;">${new Date(
+                v.Time * 1000
+              ).toLocaleTimeString()}</td>
             </tr>
           `;
         });
@@ -540,9 +591,15 @@
               <td>${v.Packets.toLocaleString()}</td>
               <td>${v.Bytes.toLocaleString()}</td>
               <td>${v.Duration}s</td>
-              <td class="${v.rx_errors > 0 ? 'status-error' : 'status-good'}">${v.rx_errors || 0}</td>
-              <td class="${v.rx_dropped > 0 ? 'status-warning' : 'status-good'}">${v.rx_dropped || 0}</td>
-              <td style="font-size: 11px;">${new Date(v.Time * 1000).toLocaleTimeString()}</td>
+              <td class="${v.rx_errors > 0 ? "status-error" : "status-good"}">${
+            v.rx_errors || 0
+          }</td>
+              <td class="${
+                v.rx_dropped > 0 ? "status-warning" : "status-good"
+              }">${v.rx_dropped || 0}</td>
+              <td style="font-size: 11px;">${new Date(
+                v.Time * 1000
+              ).toLocaleTimeString()}</td>
             </tr>
           `;
         });
@@ -568,29 +625,39 @@
       }
 
       function getRttStatus(rtt) {
-        return rtt < 1000 ? 'status-good' : rtt < 2000 ? 'status-warning' : 'status-error';
+        return rtt < 1000
+          ? "status-good"
+          : rtt < 12000
+          ? "status-warning"
+          : "status-error";
       }
 
       function getLatencyStatus(latency) {
-        return latency < 500 ? 'status-good' : latency < 1000 ? 'status-warning' : 'status-error';
+        return latency < 500
+          ? "status-good"
+          : latency < 1000
+          ? "status-warning"
+          : "status-error";
       }
 
       // Initialize dashboard
       fetchData();
-      
+
       // Update every 3 seconds
       setInterval(() => {
         fetchData();
       }, 500);
 
       // Handle window resize
-      window.addEventListener('resize', () => {
+      window.addEventListener("resize", () => {
         // Force recalculation of scroll areas
-        const scrollAreas = document.querySelectorAll('.scrollable-content, .table-container');
-        scrollAreas.forEach(area => {
-          area.style.height = 'auto';
+        const scrollAreas = document.querySelectorAll(
+          ".scrollable-content, .table-container"
+        );
+        scrollAreas.forEach((area) => {
+          area.style.height = "auto";
           setTimeout(() => {
-            area.style.height = '';
+            area.style.height = "";
           }, 10);
         });
       });
