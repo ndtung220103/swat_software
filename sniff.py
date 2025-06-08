@@ -13,10 +13,14 @@ import threading
 
 PACKETS = Queue()
 KEYMATCH = Queue()
+SENSORKEY = Queue()
 
 request_packets = defaultdict(list)
 response_packets = defaultdict(list)
 list_metric = {}
+key_to_tag = {}
+key_to_value = {}
+sensors_value ={}
 alpha = 0.2
 def is_if_up(ifname):
     try:
@@ -55,12 +59,16 @@ def detect():
                 reverse_key = f"{ip_layer.dst}:{tcp_layer.dport} -> {ip_layer.src}:{tcp_layer.sport}"
 
                 if tcp_layer.dport == 44818:
+                    tag = ''
                     try:
                         tag_start = payload.find(b'LIT')
                         if tag_start != -1:
                             tag_end = payload.find(b'\x00', tag_start)
                             tag = payload[tag_start:tag_end].decode('ascii')
                             print("Tag yêu cầu đọc:", tag)
+                            if conn_key not in request_packets:
+                                SENSORKEY.put(conn_key)
+                            key_to_tag[conn_key] = str(tag)
                     except Exception as e:
                         print("Không thể trích xuất tag:", e)
 
@@ -78,16 +86,14 @@ def detect():
                             # Số thực float32
                             value = struct.unpack('<f', payload[46:50])[0]  # '<f' là little-endian float
                             print("Giá trị float:", value)
-                            return value
+                            key_to_value[reverse_key] = value
 
-                        elif marker == b'\xc3\x00' and len(payload) >= 50:
-                            # Số nguyên int32
-                            value = struct.unpack('<i', payload[46:50])[0]  # '<i' là little-endian signed int
-                            print("Giá trị int:", value)
-                            return value
-                        else:
-                            print("Không nhận diện được định dạng payload hoặc không đủ dữ liệu.")
-                            return None
+                        # elif marker == b'\xc3\x00' and len(payload) >= 50:
+                        #     # Số nguyên int32
+                        #     value = struct.unpack('<i', payload[46:50])[0]  # '<i' là little-endian signed int
+                        #     print("Giá trị int:", value)
+                        # else:
+                        #     print("Không nhận diện được định dạng payload hoặc không đủ dữ liệu.")
                     except Exception as e:
                         print("Không thể trích xuất dữ liệu:", e)
 
@@ -152,12 +158,32 @@ def monitor():
                 del request_packets[conn_key]
                 del response_packets[conn_key]
 
+def recive_value():
+    time.sleep(0.5)
+    while True:
+        if SENSORKEY.qsize() > 2:
+            conn_key = SENSORKEY.get()
+            if conn_key in key_to_tag and conn_key in key_to_value:
+                tag = key_to_tag[conn_key]
+                value = key_to_value[value]
+                sensors_value[tag] = value
+                del key_to_tag[conn_key]
+                del key_to_value[conn_key]
+
 def send_to_dashboard():
     while True:
         try:
-            response = requests.post(
-                "http://localhost:5000/metrics",  # Địa chỉ Flask server
+            requests.post(
+                "http://localhost:5000/metrics", 
                 json=list_metric
+            )
+        except Exception as e:
+            print("Error sending to dashboard:", e)
+
+        try:
+            requests.post(
+                "http://localhost:5000/sensors",  
+                json=sensors_value
             )
         except Exception as e:
             print("Error sending to dashboard:", e)

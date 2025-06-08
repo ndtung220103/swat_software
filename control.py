@@ -2,8 +2,6 @@ from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.lib.addresses import IPAddr, EthAddr
 from pox.lib.recoco import Timer
-import threading
-import socket
 import json
 import time
 import requests
@@ -26,40 +24,13 @@ sensor_data = {}
 port_stats = {} 
 flow_stats = {} 
 
-
-def send_sensors_to_dashboard(sensors):
+def send_mess_to_dashboard(mess):
     try:
-        url = "http://127.0.0.1:5000/sensors"
+        url = "http://127.0.0.1:5000/mess"
         headers = {'Content-Type': 'application/json'}
-        response = requests.post(url, headers=headers, json=sensors)
+        response = requests.post(url, headers=headers, json=mess)
     except Exception as e:
         log.error(f"[DASHBOARD] Exception: {e}")
-# def send_mess_to_dashboard(mess):
-#     try:
-#         url = "http://127.0.0.1:5000/mess"
-#         headers = {'Content-Type': 'application/json'}
-#         response = requests.post(url, headers=headers, json=mess)
-#         if response.status_code == 200:
-#             log.info("[DASHBOARD] Sent metrics successfully")
-#         else:
-#             log.warning(f"[DASHBOARD] Failed to send metrics: {response.status_code}")
-#     except Exception as e:
-#         log.error(f"[DASHBOARD] Exception: {e}")
-
-def start_udp_server():
-    global sensor_data
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(("0.0.0.0", 9999))
-    log.info("[HMI-UDP] Listening for UDP sensor data on port 9999")
-
-    while True:
-        try:
-            data, addr = sock.recvfrom(8192)
-            decoded = data.decode()
-            sensor_data = json.loads(decoded)
-            send_sensors_to_dashboard(sensor_data)
-        except Exception as e:
-            log.error(f"[HMI-UDP] Error: {e}")
 
 class SwitchHandle (object):
     def __init__(self, connection):
@@ -242,5 +213,4 @@ def launch():
     core.openflow.addListenerByName("PortStatsReceived", _handle_PortStatsReceived)
     core.openflow.addListenerByName("FlowStatsReceived", _handle_FlowStatsReceived)
     Timer(2, poll_stats, recurring=True) 
-    threading.Thread(target=start_udp_server, daemon=True).start()
     log.info("Controller is running")
