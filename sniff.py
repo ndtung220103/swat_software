@@ -57,21 +57,18 @@ def detect():
 
             # bắt gói tin gửi yêu cầu đọc và gửi dữ liệu
             if payload[0] == 0x6f:  
-                if conn_key not in request_packets:
-                    request_packets[conn_key] = []
-                    KEYMATCH.put(conn_key)
-                request_packets[conn_key].append(timestamp)
 
-                if reverse_key not in response_packets:
-                    response_packets[reverse_key] = []
-                response_packets[reverse_key].append(timestamp)
-                
                 if tcp_layer.dport == 44818:
+                    if conn_key not in request_packets:
+                        request_packets[conn_key] = []
+                        KEYMATCH.put(conn_key)
+                    request_packets[conn_key].append(timestamp)
                     try:
                         tag_start = payload.find(b'LIT')
                         if tag_start != -1:
                             tag_end = payload.find(b'\x00', tag_start)
                             tag = payload[tag_start:tag_end].decode('ascii')
+                            print(tag)
                             if conn_key not in request_packets:
                                 SENSORKEY.put(conn_key)
                             key_to_tag[conn_key] = str(tag)
@@ -79,20 +76,18 @@ def detect():
                         print("Không thể trích xuất tag:", e)
 
                 elif tcp_layer.sport == 44818:
+                    if reverse_key not in response_packets:
+                        response_packets[reverse_key] = []
+                    response_packets[reverse_key].append(timestamp)
                     try:
                         marker = payload[44:46]
                         if marker == b'\xca\x00' and len(payload) >= 50:
                             # Số thực float32
                             value = struct.unpack('<f', payload[46:50])[0]  # '<f' là little-endian float
+                            print(value)
                             if reverse_key in key_to_tag:
                                 key_to_value[reverse_key] = value
 
-                        # elif marker == b'\xc3\x00' and len(payload) >= 50:
-                        #     # Số nguyên int32
-                        #     value = struct.unpack('<i', payload[46:50])[0]  # '<i' là little-endian signed int
-                        #     print("Giá trị int:", value)
-                        # else:
-                        #     print("Không nhận diện được định dạng payload hoặc không đủ dữ liệu.")
                     except Exception as e:
                         print("Không thể trích xuất dữ liệu:", e)
 

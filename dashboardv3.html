@@ -417,7 +417,6 @@
       }
 
       function updateSensors(sensors) {
-        console.log(sensors);
         const sensorsDiv = document.getElementById("sensors");
         sensorsDiv.innerHTML = Object.entries(sensors)
           .map(([key, value]) => `
