@@ -193,8 +193,8 @@ if __name__ == '__main__':
     start_sniff()
     threading.Thread(target=detect, daemon=True).start()
     threading.Thread(target=monitor, daemon=True).start()
-    threading.Thread(target=send_to_dashboard, daemon=True).start()
     threading.Thread(target=recive_values, daemon=True).start()
+    threading.Thread(target=send_to_dashboard, daemon=True).start()
 
     while True:
         time.sleep(1)

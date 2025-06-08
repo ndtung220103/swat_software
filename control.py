@@ -26,9 +26,11 @@ flow_stats = {}
 
 def send_mess_to_dashboard(mess):
     try:
-        url = "http://127.0.0.1:5000/mess"
+        url = "http://localhost:5000/mess"
         headers = {'Content-Type': 'application/json'}
         response = requests.post(url, headers=headers, json=mess)
+        if response.status_code == 200:
+            print("SEND MESS TO DASHBOARD")
     except Exception as e:
         log.error(f"[DASHBOARD] Exception: {e}")
 
