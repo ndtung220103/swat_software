@@ -54,7 +54,6 @@ def dashboard():
 def receive_sensors():
     data = request.get_json()
     sensor_value.update(data)
-    print(sensor_value)
     return jsonify({"status": "ok"}), 200
 
 @app.route('/sensors', methods=['GET'])

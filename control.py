@@ -241,6 +241,6 @@ def launch():
     core.openflow.addListenerByName("ConnectionUp", start_switch)
     core.openflow.addListenerByName("PortStatsReceived", _handle_PortStatsReceived)
     core.openflow.addListenerByName("FlowStatsReceived", _handle_FlowStatsReceived)
-    Timer(5, poll_stats, recurring=True) 
+    Timer(2, poll_stats, recurring=True) 
     threading.Thread(target=start_udp_server, daemon=True).start()
     log.info("Controller is running")

@@ -48,6 +48,7 @@ def detect():
             tcp_layer = packet[TCP]
             flags = tcp_layer.flags
             if Raw in packet and flags == "PA":
+                print(packet.summary())
                 timestamp = datetime.datetime.fromtimestamp(packet.time)
                 # Định danh kết nối
                 conn_key = f"{ip_layer.src}:{tcp_layer.sport} -> {ip_layer.dst}:{tcp_layer.dport}"
@@ -87,7 +88,7 @@ def detect():
 def monitor():
     time.sleep(3)
     while True:
-        if KEYMATCH.qsize() > 5:
+        if KEYMATCH.qsize() > 20:
             conn_key = KEYMATCH.get()
             if conn_key in request_packets and conn_key in response_packets:
                 request_times = request_packets[conn_key]
