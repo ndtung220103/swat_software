@@ -95,11 +95,13 @@ def detect():
                         value = None
                         if marker == b'\xca\x00' and len(payload) >= 50:
                             # Số thực float32
-                            value = struct.unpack('<f', payload[46:50])[0]  # '<f' là little-endian float
+                            value = struct.unpack('<f', payload[46:50])[0] 
+                            print(value) 
 
                         elif marker == b'\xc3\x00' and len(payload) >= 50:
                             # Số nguyên int32
-                            value = struct.unpack('<i', payload[46:50])[0]  # '<i' là little-endian signed int
+                            print(payload)
+                            value = struct.unpack('<i', payload[46:50])[0]  
                             print(value)
                         if reverse_key in key_to_tag:
                             key_to_value[reverse_key] = value
