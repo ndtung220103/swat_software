@@ -76,7 +76,6 @@ def detect():
                         payload_str = payload.decode('ascii', errors='ignore')
                         tags = re.findall(r'\b(?:LIT|MV|P|FIT|AIT|DPIT)\d{3}(?::\d)?\b', payload_str)
                         for tag in tags:
-                            print("→ Tag cần đọc:", tag)
                             if conn_key not in request_packets:
                                 SENSORKEY.put(conn_key)
                             key_to_tag[conn_key] = str(tag)
@@ -93,14 +92,16 @@ def detect():
                     try:
                         marker = payload[44:46]
                         value = None
+                        print(payload)
                         if marker == b'\xca\x00' and len(payload) >= 50:
                             # Số thực float32
+                            print("số thực")
                             value = struct.unpack('<f', payload[46:50])[0] 
                             print(value) 
 
                         elif marker == b'\xc3\x00' and len(payload) >= 50:
                             # Số nguyên int32
-                            print(payload)
+                            print("Số nguyên")
                             value = struct.unpack('<i', payload[46:50])[0]  
                             print(value)
                         if reverse_key in key_to_tag:
