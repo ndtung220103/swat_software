@@ -99,10 +99,10 @@ def detect():
                             value = struct.unpack('<f', payload[46:50])[0] 
                             print(value) 
 
-                        elif marker == b'\xc3\x00' and len(payload) >= 50:
+                        elif marker == b'\xc3\x00':
                             # Số nguyên int32
                             print("Số nguyên")
-                            value = struct.unpack('<i', payload[46:50])[0]  
+                            value = struct.unpack('<i', payload[46:48])[0]  
                             print(value)
                         if reverse_key in key_to_tag:
                             key_to_value[reverse_key] = value
