@@ -50,7 +50,7 @@ def detect():
     while True:
         packet = PACKETS.get()
         if packet.haslayer(TCP) and packet.haslayer(IP) and Raw in packet:
-            timestamp = datetime.datetime.fromtimestamp(packet.time)
+            timestamp = float(packet.time)
             ip_layer = packet[IP]
             tcp_layer = packet[TCP]
             payload = bytes (packet [Raw]) 
@@ -59,6 +59,7 @@ def detect():
 
             # bắt gói tin gửi yêu cầu đọc và gửi dữ liệu
             if payload[0] == 0x6f: 
+                print(timestamp)
                 tag ='' 
                 if tcp_layer.dport == 44818:
                     #print(packet.summary())
@@ -159,8 +160,8 @@ def monitor():
                 request_latest = max(request_times)
                 response_earliest = min(response_times)
 
-                RTT = (response_latest -request_earliest).total_seconds()
-                Latency = (request_latest -request_earliest).total_seconds()
+                RTT = response_latest -request_earliest
+                Latency = request_latest -request_earliest
                 NUM = len(request_times)
 
                 src_part, dst_part = conn_key.split(" -> ")
