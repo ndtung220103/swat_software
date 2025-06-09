@@ -668,20 +668,26 @@
       }
 
       setTimeout(function () {
-        let metrics = fetch("http://127.0.0.1:5000/metrics").then((res) =>
-          res.json()
-        );
-        for (const [key, val] of Object.entries(metrics)) {
-          const rtt = (val.RTT * 1e6).toFixed(2);
-          const latency = (val.Latency * 1e6).toFixed(2);
-          const num = val.NUM;
-          base_metric[key] = {
-            rtt: rtt,
-            latency: latency,
-            num: num,
-          };
-          console.log(base_metric[key]);
-        }
+        fetch("http://127.0.0.1:5000/metrics")
+          .then((res) => res.json())
+          .then((metrics) => {
+            for (const [key, val] of Object.entries(metrics)) {
+              const rtt = (val.RTT * 1e6).toFixed(2);
+              const latency = (val.Latency * 1e6).toFixed(2);
+              const num = val.NUM;
+
+              base_metric[key] = {
+                rtt: rtt,
+                latency: latency,
+                num: num,
+              };
+
+              console.log(base_metric[key]);
+            }
+          })
+          .catch((err) => {
+            console.error("Error fetching data:", err);
+          });
       }, 15000);
 
       // Initialize dashboard
