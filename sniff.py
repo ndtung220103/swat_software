@@ -74,15 +74,17 @@ def detect():
                         #             SENSORKEY.put(conn_key)
                         #         key_to_tag[conn_key] = str(tag)
                         payload_str = payload.decode('ascii', errors='ignore')
-                        print(payload)
-                        print(payload_str)
-                        tag_start = payload.find(b'\xc3')
-                        print("start: ", tag_start)
+                        tag_start_send = payload.find(b'\xc3')
                         tags = re.findall(r'\b(?:LIT|MV|P|FIT|AIT|DPIT)\d{3}(?::\d)?\b', payload_str)
                         for tag in tags:
                             if conn_key not in request_packets:
                                 SENSORKEY.put(conn_key)
                             key_to_tag[conn_key] = str(tag)
+                        # nếu là lệnh send thì dữ liệu ngay trong yêu cầu
+                        if tag_start_send != -1:
+                            value = struct.unpack('<h', payload[64:66])[0]
+                            key_to_value[conn_key] = value
+
                     except Exception as e:
                         print("Không thể trích xuất tag:", e)
                     if conn_key not in request_packets:
