@@ -67,7 +67,7 @@ def detect():
                         for prefix in prefixes:
                             tag_start = payload.find(prefix)
                             if tag_start != -1:
-                                tag_end = payload.find(b'\x00', tag_start)
+                                tag_end = payload.find(b':', tag_start)
                                 tag = payload[tag_start:tag_end].decode('ascii')
                                 if conn_key not in request_packets:
                                     SENSORKEY.put(conn_key)
@@ -92,7 +92,7 @@ def detect():
                         elif marker == b'\xc3\x00' and len(payload) >= 50:
                             # Số nguyên int32
                             value = struct.unpack('<i', payload[46:50])[0]  # '<i' là little-endian signed int
-
+                            print(value)
                         if reverse_key in key_to_tag:
                             key_to_value[reverse_key] = value
 
@@ -162,18 +162,13 @@ def monitor():
 
 def recive_values():
     time.sleep(0.5)
-    print("IM here")
     while True:
         if SENSORKEY.qsize() > 2:
             conn_key = SENSORKEY.get()
-            print(conn_key)
             if conn_key in key_to_tag and conn_key in key_to_value:
                 tag = key_to_tag[conn_key]
                 value = key_to_value[conn_key]
                 sensors_value[tag] = value
-                print(tag)
-                print(value)
-                print(sensors_value)
                 del key_to_tag[conn_key]
                 del key_to_value[conn_key]
 
