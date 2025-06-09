@@ -76,6 +76,8 @@ def detect():
                         payload_str = payload.decode('ascii', errors='ignore')
                         print(payload)
                         print(payload_str)
+                        tag_start = payload.find(b'\xc3')
+                        print("start: ", tag_start)
                         tags = re.findall(r'\b(?:LIT|MV|P|FIT|AIT|DPIT)\d{3}(?::\d)?\b', payload_str)
                         for tag in tags:
                             if conn_key not in request_packets:
