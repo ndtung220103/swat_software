@@ -22,6 +22,7 @@ list_metric = {}
 key_to_tag = {}
 key_to_value = {}
 sensors_value ={}
+mess ={}
 alpha = 0.1
 def is_if_up(ifname):
     try:
@@ -63,16 +64,6 @@ def detect():
                     #print(packet.summary())
                     #print("time: ",timestamp)
                     try:
-                        # prefixes = [b'LIT', b'MV', b'P']
-                        # tag = None
-                        # for prefix in prefixes:
-                        #     tag_start = payload.find(prefix)
-                        #     if tag_start != -1:
-                        #         tag_end = payload.find(b':', tag_start)
-                        #         tag = payload[tag_start:tag_end].decode('ascii')
-                        #         if conn_key not in request_packets:
-                        #             SENSORKEY.put(conn_key)
-                        #         key_to_tag[conn_key] = str(tag)
                         payload_str = payload.decode('ascii', errors='ignore')
                         tag_start_send = payload.find(b'\xc3')
                         tags = re.findall(r'\b(?:LIT|MV|P|FIT|AIT|DPIT)\d{3}(?::\d)?\b', payload_str)
@@ -83,6 +74,12 @@ def detect():
                         # nếu là lệnh send thì dữ liệu ngay trong yêu cầu
                         if tag_start_send != -1:
                             value = struct.unpack('<h', payload[64:66])[0]
+                            if conn_key in key_to_value:
+                                if value != key_to_value[conn_key]:
+                                    msg = "Phát hiện thay đổi dữ liệu %s từ %s thành %s"%(key_to_tag[conn_key],key_to_value[conn_key],value)
+                                    mess["mess3"] = msg
+                                else:
+                                    mess.clear()
                             key_to_value[conn_key] = value
 
                     except Exception as e:
@@ -101,12 +98,24 @@ def detect():
                             # Số thực float32
                             value = struct.unpack('<f', payload[46:50])[0] 
                             if reverse_key in key_to_tag:
+                                if reverse_key in key_to_value:
+                                    if value != key_to_value[reverse_key]:
+                                        msg = "Phát hiện thay đổi dữ liệu %s từ %s thành %s"%(key_to_tag[reverse_key],key_to_value[reverse_key],value)
+                                        mess["mess3"] = msg
+                                    else:
+                                        mess.clear()
                                 key_to_value[reverse_key] = value
 
                         elif marker == b'\xc3\x00':
                             # Số nguyên int32
                             value = struct.unpack('<h', payload[46:48])[0]  
                             if reverse_key in key_to_tag:
+                                if reverse_key in key_to_value:
+                                    if value != key_to_value[reverse_key]:
+                                        msg = "Phát hiện thay đổi dữ liệu %s từ %s thành %s"%(key_to_tag[reverse_key],key_to_value[reverse_key],value)
+                                        mess["mess3"] = msg
+                                    else:
+                                        mess.clear()
                                 key_to_value[reverse_key] = value
 
                     except Exception as e:
@@ -200,6 +209,14 @@ def send_to_dashboard():
             requests.post(
                 "http://localhost:5000/sensors",  
                 json=sensors_value
+            )
+        except Exception as e:
+            print("Error sending to dashboard:", e)
+
+        try:
+            requests.post(
+                "http://localhost:5000/mess",  
+                json=mess
             )
         except Exception as e:
             print("Error sending to dashboard:", e)

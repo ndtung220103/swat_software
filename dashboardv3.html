@@ -542,9 +542,17 @@
             tx_bytes: v.tx_bytes,
             tx_packets: v.tx_packets,
           };
-          const dt = time_now - last.time || 1;
-          const throughput = ((v.tx_bytes - last.tx_bytes) / dt).toFixed(2);
-          const pps = ((v.tx_packets - last.tx_packets) / dt).toFixed(2);
+          const delta_bytes = v.tx_bytes - last.tx_bytes;
+          const delta_packets = v.tx_packets - last.tx_packets;
+          const dt = time_now - last.time;
+
+          let throughput = 0;
+          let pps = 0;
+
+          if (dt > 0 && (delta_bytes > 0 || delta_packets > 0)) {
+            throughput = (delta_bytes / dt).toFixed(2);
+            pps = (delta_packets / dt).toFixed(2);
+          }
 
           port_last_time[k] = {
             time: time_now,
