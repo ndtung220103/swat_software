@@ -470,6 +470,11 @@
           if (base_num > val.NUM && base_latency > 1.5 * latency) {
             let msg = `Warning Latency ${latency} and NUM ${val.NUM}  on ${key}`;
             updateAlerts(key, msg);
+            console.log(msg);
+            
+          }else{
+            console.log(`${key} is true`);
+            
           }
           const row = document.createElement("tr");
           row.innerHTML = `
@@ -688,7 +693,7 @@
           .catch((err) => {
             console.error("Error fetching data:", err);
           });
-      }, 15000);
+      }, 20000);
 
       // Initialize dashboard
       fetchData();

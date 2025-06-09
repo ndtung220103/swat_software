@@ -76,7 +76,6 @@ def receive_mess():
     data = request.get_json()
     print(data)
     list_mess.update(data)
-    print(list_mess)
     return jsonify({"status": "ok"}), 200
 
 @app.route('/mess', methods=['GET'])
