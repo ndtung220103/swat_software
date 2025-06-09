@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-
+import threading
+import time
 app = Flask(__name__)
 CORS(app) 
 
@@ -9,6 +10,15 @@ metrics_store = {}
 received_port_stats = {}
 received_flow_stats = {}
 list_mess = {}
+
+def clear_list_mess():
+    global list_mess
+    while True:
+        time.sleep(15)
+        list_mess.clear()
+
+clear_thread = threading.Thread(target=clear_list_mess, daemon=True)
+clear_thread.start()
 
 @app.route('/port_stats', methods=['POST'])
 def receive_port_stats():

@@ -21,7 +21,7 @@ list_metric = {}
 key_to_tag = {}
 key_to_value = {}
 sensors_value ={}
-alpha = 0.2
+alpha = 0.1
 def is_if_up(ifname):
     try:
         result = subprocess.check_output(f"cat /sys/class/net/{ifname}/operstate",
@@ -61,10 +61,6 @@ def detect():
                 if tcp_layer.dport == 44818:
                     #print(packet.summary())
                     #print("time: ",timestamp)
-                    if conn_key not in request_packets:
-                        request_packets[conn_key] = []
-                        KEYMATCH.put(conn_key)
-                    request_packets[conn_key].append(timestamp)
                     try:
                         tag_start = payload.find(b'LIT')
                         if tag_start != -1:
@@ -75,13 +71,14 @@ def detect():
                             key_to_tag[conn_key] = str(tag)
                     except Exception as e:
                         print("Không thể trích xuất tag:", e)
+                    if conn_key not in request_packets:
+                        request_packets[conn_key] = []
+                        KEYMATCH.put(conn_key)
+                    request_packets[conn_key].append(timestamp)
 
                 elif tcp_layer.sport == 44818:
                     #print(packet.summary())
                     #print("time: ",timestamp)
-                    if reverse_key not in response_packets:
-                        response_packets[reverse_key] = []
-                    response_packets[reverse_key].append(timestamp)
                     try:
                         marker = payload[44:46]
                         if marker == b'\xca\x00' and len(payload) >= 50:
@@ -93,6 +90,9 @@ def detect():
                     except Exception as e:
                         print("Không thể trích xuất dữ liệu:", e)
 
+                    if reverse_key not in response_packets:
+                        response_packets[reverse_key] = []
+                    response_packets[reverse_key].append(timestamp)
 
             # ip_layer = packet[IP]
             # tcp_layer = packet[TCP]
@@ -155,8 +155,7 @@ def recive_values():
     time.sleep(0.5)
     print("IM here")
     while True:
-        #if SENSORKEY.qsize() > 2:
-        if 2>1 :
+        if SENSORKEY.qsize() > 2:
             conn_key = SENSORKEY.get()
             print(conn_key)
             if conn_key in key_to_tag and conn_key in key_to_value:
@@ -168,7 +167,6 @@ def recive_values():
                 print(sensors_value)
                 del key_to_tag[conn_key]
                 del key_to_value[conn_key]
-        time.sleep(0.1)
 
 def send_to_dashboard():
     while True:
