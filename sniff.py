@@ -91,21 +91,17 @@ def detect():
                     #print("time: ",timestamp)
                     try:
                         marker = payload[44:46]
-                        value = None
-                        print(payload)
                         if marker == b'\xca\x00' and len(payload) >= 50:
                             # Số thực float32
-                            print("số thực")
                             value = struct.unpack('<f', payload[46:50])[0] 
-                            print(value) 
+                            if reverse_key in key_to_tag:
+                                key_to_value[reverse_key] = value
 
                         elif marker == b'\xc3\x00':
                             # Số nguyên int32
-                            print("Số nguyên")
                             value = struct.unpack('<h', payload[46:48])[0]  
-                            print(value)
-                        if reverse_key in key_to_tag:
-                            key_to_value[reverse_key] = value
+                            if reverse_key in key_to_tag:
+                                key_to_value[reverse_key] = value
 
                     except Exception as e:
                         print("Không thể trích xuất dữ liệu:", e)
@@ -180,9 +176,10 @@ def recive_values():
                 tag = key_to_tag[conn_key]
                 value = key_to_value[conn_key]
                 sensors_value[tag] = value
+                print(sensors_value)
                 del key_to_tag[conn_key]
                 del key_to_value[conn_key]
-
+        
 def send_to_dashboard():
     while True:
         try:
