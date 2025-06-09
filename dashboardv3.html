@@ -425,13 +425,11 @@
             fetch("http://127.0.0.1:5000/get_flow_stats").then((res) =>
               res.json()
             ),
-            fetch("http://127.0.0.1:5000/mess").then((res) =>
-              res.json()
-            ),
+            fetch("http://127.0.0.1:5000/mess").then((res) => res.json()),
           ]);
-          
-          for (const [key, m] of Object.entries(mess)){
-              updateAlerts(key,m)
+
+          for (const [key, m] of Object.entries(mess)) {
+            updateAlerts(key, m);
           }
           updateSensors(sensors);
           updateMetrics(metrics);
@@ -541,23 +539,31 @@
             time: time_now,
             tx_bytes: v.tx_bytes,
             tx_packets: v.tx_packets,
+            throughput: 0,
+            pps: 0,
           };
+
           const delta_bytes = v.tx_bytes - last.tx_bytes;
           const delta_packets = v.tx_packets - last.tx_packets;
           const dt = time_now - last.time;
 
-          let throughput = 0;
-          let pps = 0;
+          let throughput, pps;
 
           if (dt > 0 && (delta_bytes > 0 || delta_packets > 0)) {
             throughput = (delta_bytes / dt).toFixed(2);
             pps = (delta_packets / dt).toFixed(2);
+          } else {
+            throughput = last.throughput;
+            pps = last.pps;
           }
 
+          // Cập nhật lại giá trị lưu trữ
           port_last_time[k] = {
             time: time_now,
             tx_bytes: v.tx_bytes,
             tx_packets: v.tx_packets,
+            throughput,
+            pps,
           };
 
           return `
