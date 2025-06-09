@@ -74,7 +74,6 @@ def get_sensors():
 @app.route('/mess', methods=['POST'])
 def receive_mess():
     data = request.get_json()
-    print(data)
     list_mess.update(data)
     return jsonify({"status": "ok"}), 200
 

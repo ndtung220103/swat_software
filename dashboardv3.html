@@ -467,14 +467,9 @@
           const base_rtt = base_metric[key].rtt;
           const base_latency = base_metric[key].latency;
           const base_num = base_metric[key].num;
-          if (base_num > val.NUM && base_latency > 1.5 * latency) {
+          if (base_num < val.NUM && base_latency*1.5 < latency) {
             let msg = `Warning Latency ${latency} and NUM ${val.NUM}  on ${key}`;
-            updateAlerts(key, msg);
-            console.log(msg);
-            
-          }else{
-            console.log(`${key} is true`);
-            
+            updateAlerts(key, msg);            
           }
           const row = document.createElement("tr");
           row.innerHTML = `
