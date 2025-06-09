@@ -6,6 +6,7 @@ from threading import Thread
 from queue import Queue
 import datetime
 import time
+import re
 import requests
 import json
 import threading
@@ -62,16 +63,23 @@ def detect():
                     #print(packet.summary())
                     #print("time: ",timestamp)
                     try:
-                        prefixes = [b'LIT', b'MV', b'P']
-                        tag = None
-                        for prefix in prefixes:
-                            tag_start = payload.find(prefix)
-                            if tag_start != -1:
-                                tag_end = payload.find(b':', tag_start)
-                                tag = payload[tag_start:tag_end].decode('ascii')
-                                if conn_key not in request_packets:
-                                    SENSORKEY.put(conn_key)
-                                key_to_tag[conn_key] = str(tag)
+                        # prefixes = [b'LIT', b'MV', b'P']
+                        # tag = None
+                        # for prefix in prefixes:
+                        #     tag_start = payload.find(prefix)
+                        #     if tag_start != -1:
+                        #         tag_end = payload.find(b':', tag_start)
+                        #         tag = payload[tag_start:tag_end].decode('ascii')
+                        #         if conn_key not in request_packets:
+                        #             SENSORKEY.put(conn_key)
+                        #         key_to_tag[conn_key] = str(tag)
+                        payload_str = payload.decode('ascii', errors='ignore')
+                        tags = re.findall(r'\b(?:LIT|MV|P|FIT|AIT|DPIT)\d{3}(?::\d)?\b', payload_str)
+                        for tag in tags:
+                            print("→ Tag cần đọc:", tag)
+                            if conn_key not in request_packets:
+                                SENSORKEY.put(conn_key)
+                            key_to_tag[conn_key] = str(tag)
                     except Exception as e:
                         print("Không thể trích xuất tag:", e)
                     if conn_key not in request_packets:
