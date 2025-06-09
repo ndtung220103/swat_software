@@ -48,13 +48,11 @@ def start_sniff():
 def detect():
     while True:
         packet = PACKETS.get()
-        print(packet.summary())
         if packet.haslayer(TCP) and packet.haslayer(IP) and Raw in packet:
             timestamp = datetime.datetime.fromtimestamp(packet.time)
             ip_layer = packet[IP]
             tcp_layer = packet[TCP]
             payload = bytes (packet [Raw]) 
-            print(payload)
             conn_key = f"{ip_layer.src}:{tcp_layer.sport} -> {ip_layer.dst}:{tcp_layer.dport}"
             reverse_key = f"{ip_layer.dst}:{tcp_layer.dport} -> {ip_layer.src}:{tcp_layer.sport}"
 
@@ -76,6 +74,8 @@ def detect():
                         #             SENSORKEY.put(conn_key)
                         #         key_to_tag[conn_key] = str(tag)
                         payload_str = payload.decode('ascii', errors='ignore')
+                        print(payload)
+                        print(payload_str)
                         tags = re.findall(r'\b(?:LIT|MV|P|FIT|AIT|DPIT)\d{3}(?::\d)?\b', payload_str)
                         for tag in tags:
                             if conn_key not in request_packets:
