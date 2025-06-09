@@ -48,11 +48,13 @@ def start_sniff():
 def detect():
     while True:
         packet = PACKETS.get()
+        print(packet.summary())
         if packet.haslayer(TCP) and packet.haslayer(IP) and Raw in packet:
             timestamp = datetime.datetime.fromtimestamp(packet.time)
             ip_layer = packet[IP]
             tcp_layer = packet[TCP]
             payload = bytes (packet [Raw]) 
+            print(payload)
             conn_key = f"{ip_layer.src}:{tcp_layer.sport} -> {ip_layer.dst}:{tcp_layer.dport}"
             reverse_key = f"{ip_layer.dst}:{tcp_layer.dport} -> {ip_layer.src}:{tcp_layer.sport}"
 
