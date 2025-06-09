@@ -191,10 +191,13 @@ def recive_values():
                 tag = key_to_tag[conn_key]
                 value = key_to_value[conn_key]
                 sensors_value[tag] = value
-                print(sensors_value)
                 del key_to_tag[conn_key]
                 del key_to_value[conn_key]
-        
+            if conn_key in key_to_tag and conn_key not in key_to_value:
+                del key_to_tag[conn_key]
+            if conn_key not in key_to_tag and conn_key in key_to_value:
+                del key_to_value[conn_key]
+                
 def send_to_dashboard():
     while True:
         try:
