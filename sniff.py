@@ -59,7 +59,6 @@ def detect():
 
             # bắt gói tin gửi yêu cầu đọc và gửi dữ liệu
             if payload[0] == 0x6f: 
-                print(timestamp)
                 tag ='' 
                 if tcp_layer.dport == 44818:
                     #print(packet.summary())
