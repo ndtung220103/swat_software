@@ -407,6 +407,7 @@
     <script>
       let currentSwitch = 1;
       const port_last_time = {};
+      const base_metric = {};
       const flow_last_time = {};
       const currentAlerts = {};
 
@@ -463,6 +464,13 @@
           const rtt = (val.RTT * 1e6).toFixed(2);
           const latency = (val.Latency * 1e6).toFixed(2);
 
+          const base_rtt = base_metric[key].rtt;
+          const base_latency = base_metric[key].latency;
+          const base_num = base_metric[key].num;
+          if (base_num > val.NUM && base_latency > 1.5 * latency) {
+            let msg = `Warning Latency ${latency} and NUM ${val.NUM}  on ${key}`;
+            updateAlerts(key, msg);
+          }
           const row = document.createElement("tr");
           row.innerHTML = `
             <td style="font-family: monospace; font-size: 12px;">${key}</td>
@@ -644,7 +652,7 @@
       }
 
       function getRttStatus(rtt) {
-        return rtt < 1000
+        return rtt < 10000
           ? "status-good"
           : rtt < 12000
           ? "status-warning"
@@ -652,12 +660,29 @@
       }
 
       function getLatencyStatus(latency) {
-        return latency < 500
+        return latency < 30
           ? "status-good"
-          : latency < 1000
+          : latency < 50
           ? "status-warning"
           : "status-error";
       }
+
+      setTimeout(function () {
+        let metrics = fetch("http://127.0.0.1:5000/metrics").then((res) =>
+          res.json()
+        );
+        for (const [key, val] of Object.entries(metrics)) {
+          const rtt = (val.RTT * 1e6).toFixed(2);
+          const latency = (val.Latency * 1e6).toFixed(2);
+          const num = val.NUM;
+          base_metric[key] = {
+            rtt: rtt,
+            latency: latency,
+            num: num,
+          };
+          console.log(base_metric[key]);
+        }
+      }, 15000);
 
       // Initialize dashboard
       fetchData();
