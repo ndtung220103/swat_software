@@ -76,7 +76,7 @@ def detect():
                             value = struct.unpack('<h', payload[64:66])[0]
                             if conn_key in key_to_value:
                                 if value != key_to_value[conn_key]:
-                                    msg = "Phát hiện thay đổi dữ liệu %s từ %s thành %s"%(key_to_tag[conn_key],key_to_value[conn_key],value)
+                                    msg = "Phát hiện thay đổi dữ liệu %s từ %s thành %s on key %s"%(key_to_tag[conn_key],key_to_value[conn_key],value, conn_key)
                                     mess["mess3"] = msg
                                 else:
                                     mess.clear()
@@ -100,7 +100,7 @@ def detect():
                             if reverse_key in key_to_tag:
                                 if reverse_key in key_to_value:
                                     if value != key_to_value[reverse_key]:
-                                        msg = "Phát hiện thay đổi dữ liệu %s từ %s thành %s"%(key_to_tag[reverse_key],key_to_value[reverse_key],value)
+                                        msg = "Phát hiện thay đổi dữ liệu %s từ %s thành %s on key %s"%(key_to_tag[reverse_key],key_to_value[reverse_key],value,reverse_key)
                                         mess["mess3"] = msg
                                     else:
                                         mess.clear()
@@ -112,7 +112,7 @@ def detect():
                             if reverse_key in key_to_tag:
                                 if reverse_key in key_to_value:
                                     if value != key_to_value[reverse_key]:
-                                        msg = "Phát hiện thay đổi dữ liệu %s từ %s thành %s"%(key_to_tag[reverse_key],key_to_value[reverse_key],value)
+                                        msg = "Phát hiện thay đổi dữ liệu %s từ %s thành %s on key %s"%(key_to_tag[reverse_key],key_to_value[reverse_key],value, reverse_key)
                                         mess["mess3"] = msg
                                     else:
                                         mess.clear()
@@ -197,7 +197,7 @@ def recive_values():
                 del key_to_tag[conn_key]
             if conn_key not in key_to_tag and conn_key in key_to_value:
                 del key_to_value[conn_key]
-                
+
 def send_to_dashboard():
     while True:
         try:
