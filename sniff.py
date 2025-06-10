@@ -61,9 +61,9 @@ def detect():
             if payload[0] == 0x6f: 
                 tag ='' 
                 if tcp_layer.dport == 44818:
-                    print(payload.hex())
-                    id = payload[12:20]
-                    print(id)
+                    # print(payload.hex())
+                    # id = payload[12:20] #Sender Context
+                    # print(id)
                     #print(packet.summary())
                     #print("time: ",timestamp)
                     try:
@@ -93,11 +93,6 @@ def detect():
                     request_packets[conn_key].append(timestamp)
 
                 elif tcp_layer.sport == 44818:
-                    print(payload.hex())
-                    id = payload[12:20]
-                    print(id)
-                    #print(packet.summary())
-                    #print("time: ",timestamp)
                     try:
                         marker = payload[44:46]
                         if marker == b'\xca\x00' and len(payload) >= 50:
