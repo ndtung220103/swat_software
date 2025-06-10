@@ -60,7 +60,10 @@ def detect():
             # bắt gói tin gửi yêu cầu đọc và gửi dữ liệu
             if payload[0] == 0x6f: 
                 tag ='' 
+                print(payload.hex())
                 if tcp_layer.dport == 44818:
+                    id = payload[12:20]
+                    print(id)
                     #print(packet.summary())
                     #print("time: ",timestamp)
                     try:
@@ -90,6 +93,8 @@ def detect():
                     request_packets[conn_key].append(timestamp)
 
                 elif tcp_layer.sport == 44818:
+                    id = payload[12:20]
+                    print(id)
                     #print(packet.summary())
                     #print("time: ",timestamp)
                     try:
