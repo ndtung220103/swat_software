@@ -78,7 +78,7 @@ def detect():
                         if tag_start_send != -1:
                             print(tag_start_send)
                             value = struct.unpack('<h', payload[64:66])[0]
-                            value2 = struct.unpack('<h', payload[62:4])[0]
+                            value2 = struct.unpack('<h', payload[62:64])[0]
                             print(value)
                             print(value2)
                             if conn_key in key_to_value:
