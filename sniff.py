@@ -17,6 +17,7 @@ KEYMATCH = Queue()
 SENSORKEY = Queue()
 
 request_packets = defaultdict(list)
+ack_packets = defaultdict(list)
 response_packets = defaultdict(list)
 list_metric = {}
 key_to_tag = {}
@@ -49,82 +50,88 @@ def start_sniff():
 def detect():
     while True:
         packet = PACKETS.get()
-        if packet.haslayer(TCP) and packet.haslayer(IP) and Raw in packet:
-            timestamp = float(packet.time)
+        if packet.haslayer(TCP) and packet.haslayer(IP) :
             ip_layer = packet[IP]
             tcp_layer = packet[TCP]
-            payload = bytes (packet [Raw]) 
-            conn_key = f"{ip_layer.src}:{tcp_layer.sport} -> {ip_layer.dst}:{tcp_layer.dport}"
-            reverse_key = f"{ip_layer.dst}:{tcp_layer.dport} -> {ip_layer.src}:{tcp_layer.sport}"
+            conn_key = f"{ip_layer.src}:{tcp_layer.sport} -> {ip_layer.dst}:{tcp_layer.dport}{tcp_layer.ack}"
+            reverse_key = f"{ip_layer.dst}:{tcp_layer.dport} -> {ip_layer.src}:{tcp_layer.sport}{tcp_layer.seq}"
+            timestamp = float(packet.time)
+            if tcp_layer.flags == 'A':
+                if reverse_key in request_packets:
+                    if reverse_key not in ack_packets:
+                        ack_packets[reverse_key] =[]
+                    ack_packets[reverse_key].append(timestamp)
+            if Raw in packet:
+                payload = bytes (packet [Raw]) 
 
-            # bắt gói tin gửi yêu cầu đọc và gửi dữ liệu
-            if payload[0] == 0x6f: 
-                tag ='' 
-                if tcp_layer.dport == 44818:
-                    # print(payload.hex())
-                    # id = payload[12:20] #Sender Context
-                    # print(id)
-                    #print(packet.summary())
-                    #print("time: ",timestamp)
-                    try:
-                        payload_str = payload.decode('ascii', errors='ignore')
-                        tag_start_send = payload.find(b'\xc3')
-                        tags = re.findall(r'\b(?:LIT|MV|P|FIT|AIT|DPIT)\d{3}(?::\d)?\b', payload_str)
-                        for tag in tags:
-                            if conn_key not in request_packets:
-                                SENSORKEY.put(conn_key)
-                            key_to_tag[conn_key] = str(tag)
-                        # nếu là lệnh send thì dữ liệu ngay trong yêu cầu
-                        if tag_start_send != -1 and tag_start_send >59 and tag_start_send < 70:
-                            value = struct.unpack('<h', payload[tag_start_send+4:tag_start_send+6])[0]
-                            if conn_key in key_to_value:
-                                if value != key_to_value[conn_key]:
-                                    msg = "Phát hiện thay đổi dữ liệu %s từ %s thành %s on key %s"%(key_to_tag[conn_key],key_to_value[conn_key],value, conn_key)
-                                    mess["mess3"] = msg
-                                else:
-                                    mess.clear()
-                            key_to_value[conn_key] = value
-
-                    except Exception as e:
-                        print("Không thể trích xuất tag:", e)
-                    if conn_key not in request_packets:
-                        request_packets[conn_key] = []
-                        KEYMATCH.put(conn_key)
-                    request_packets[conn_key].append(timestamp)
-
-                elif tcp_layer.sport == 44818:
-                    try:
-                        marker = payload[44:46]
-                        if marker == b'\xca\x00' and len(payload) >= 50:
-                            # Số thực float32
-                            value = struct.unpack('<f', payload[46:50])[0] 
-                            if reverse_key in key_to_tag:
-                                if reverse_key in key_to_value:
-                                    if value != key_to_value[reverse_key]:
-                                        msg = "Phát hiện thay đổi dữ liệu %s từ %s thành %s on key %s"%(key_to_tag[reverse_key],key_to_value[reverse_key],value,reverse_key)
+                # bắt gói tin gửi yêu cầu đọc và gửi dữ liệu
+                if payload[0] == 0x6f: 
+                    tag ='' 
+                    if tcp_layer.dport == 44818:
+                        # print(payload.hex())
+                        # id = payload[12:20] #Sender Context
+                        # print(id)
+                        #print(packet.summary())
+                        #print("time: ",timestamp)
+                        try:
+                            payload_str = payload.decode('ascii', errors='ignore')
+                            tag_start_send = payload.find(b'\xc3')
+                            tags = re.findall(r'\b(?:LIT|MV|P|FIT|AIT|DPIT)\d{3}(?::\d)?\b', payload_str)
+                            for tag in tags:
+                                if conn_key not in request_packets:
+                                    SENSORKEY.put(conn_key)
+                                key_to_tag[conn_key] = str(tag)
+                            # nếu là lệnh send thì dữ liệu ngay trong yêu cầu
+                            if tag_start_send != -1 and tag_start_send >59 and tag_start_send < 70:
+                                value = struct.unpack('<h', payload[tag_start_send+4:tag_start_send+6])[0]
+                                if conn_key in key_to_value:
+                                    if value != key_to_value[conn_key]:
+                                        msg = "Phát hiện thay đổi dữ liệu %s từ %s thành %s on key %s"%(key_to_tag[conn_key],key_to_value[conn_key],value, conn_key)
                                         mess["mess3"] = msg
                                     else:
                                         mess.clear()
-                                key_to_value[reverse_key] = value
+                                key_to_value[conn_key] = value
 
-                        elif marker == b'\xc3\x00':
-                            # Số nguyên int32
-                            value = struct.unpack('<h', payload[46:48])[0]  
-                            if reverse_key in key_to_tag:
-                                if reverse_key in key_to_value:
-                                    if value != key_to_value[reverse_key]:
-                                        msg = "Phát hiện thay đổi dữ liệu %s từ %s thành %s on key %s"%(key_to_tag[reverse_key],key_to_value[reverse_key],value, reverse_key)
-                                        mess["mess3"] = msg
-                                    else:
-                                        mess.clear()
-                                key_to_value[reverse_key] = value
+                        except Exception as e:
+                            print("Không thể trích xuất tag:", e)
+                        if conn_key not in request_packets:
+                            request_packets[conn_key] = []
+                            KEYMATCH.put(conn_key)
+                        request_packets[conn_key].append(timestamp)
 
-                    except Exception as e:
-                        print("Không thể trích xuất dữ liệu:", e)
+                    elif tcp_layer.sport == 44818:
+                        try:
+                            marker = payload[44:46]
+                            if marker == b'\xca\x00' and len(payload) >= 50:
+                                # Số thực float32
+                                value = struct.unpack('<f', payload[46:50])[0] 
+                                if reverse_key in key_to_tag:
+                                    if reverse_key in key_to_value:
+                                        if value != key_to_value[reverse_key]:
+                                            msg = "Phát hiện thay đổi dữ liệu %s từ %s thành %s on key %s"%(key_to_tag[reverse_key],key_to_value[reverse_key],value,reverse_key)
+                                            mess["mess3"] = msg
+                                        else:
+                                            mess.clear()
+                                    key_to_value[reverse_key] = value
 
-                    if reverse_key not in response_packets:
-                        response_packets[reverse_key] = []
-                    response_packets[reverse_key].append(timestamp)
+                            elif marker == b'\xc3\x00':
+                                # Số nguyên int32
+                                value = struct.unpack('<h', payload[46:48])[0]  
+                                if reverse_key in key_to_tag:
+                                    if reverse_key in key_to_value:
+                                        if value != key_to_value[reverse_key]:
+                                            msg = "Phát hiện thay đổi dữ liệu %s từ %s thành %s on key %s"%(key_to_tag[reverse_key],key_to_value[reverse_key],value, reverse_key)
+                                            mess["mess3"] = msg
+                                        else:
+                                            mess.clear()
+                                    key_to_value[reverse_key] = value
+
+                        except Exception as e:
+                            print("Không thể trích xuất dữ liệu:", e)
+
+                        if reverse_key not in response_packets:
+                            response_packets[reverse_key] = []
+                        response_packets[reverse_key].append(timestamp)
 
             # ip_layer = packet[IP]
             # tcp_layer = packet[TCP]
@@ -153,7 +160,8 @@ def monitor():
             conn_key = KEYMATCH.get()
             if conn_key in request_packets and conn_key in response_packets:
                 request_times = request_packets[conn_key]
-                response_times = response_packets[conn_key]
+                #response_times = response_packets[conn_key]
+                response_times = ack_packets[conn_key]
 
                 request_earliest = min(request_times)
                 response_latest = max(response_times)
@@ -182,6 +190,7 @@ def monitor():
                     list_metric[key]["NUM"] = NUM
                 del request_packets[conn_key]
                 del response_packets[conn_key]
+                del ack_packets[conn_key]
 
 def recive_values():
     time.sleep(0.5)
