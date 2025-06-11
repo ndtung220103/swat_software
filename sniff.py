@@ -75,10 +75,14 @@ def detect():
                                 SENSORKEY.put(conn_key)
                             key_to_tag[conn_key] = str(tag)
                         # nếu là lệnh send thì dữ liệu ngay trong yêu cầu
-                        if tag_start_send != -1:
+                        if tag_start_send != -1 and tag_start_send >59 and tag_start_send < 70:
                             print(tag_start_send)
                             value = struct.unpack('<h', payload[tag_start_send+2:tag_start_send+4])[0]
+                            value62 = struct.unpack('<h', payload[62:64])[0]
+                            value64 = struct.unpack('<h', payload[64:66])[0]
                             print(value)
+                            print("value 62 ", value62)
+                            print("value 64 ", value64)
                             if conn_key in key_to_value:
                                 if value != key_to_value[conn_key]:
                                     msg = "Phát hiện thay đổi dữ liệu %s từ %s thành %s on key %s"%(key_to_tag[conn_key],key_to_value[conn_key],value, conn_key)
