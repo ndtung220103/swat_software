@@ -463,14 +463,6 @@
         for (const [key, val] of Object.entries(metrics)) {
           const rtt = (val.RTT * 1e6).toFixed(2);
           const latency = (val.Latency * 1e6).toFixed(2);
-
-          const base_rtt = base_metric[key].rtt;
-          const base_latency = base_metric[key].latency;
-          const base_num = base_metric[key].num;
-          if (base_num < val.NUM && base_latency*1.5 < latency) {
-            let msg = `Warning Latency ${latency} and NUM ${val.NUM}  on ${key}`;
-            updateAlerts(key, msg);            
-          }
           const row = document.createElement("tr");
           row.innerHTML = `
             <td style="font-family: monospace; font-size: 12px;">${key}</td>
@@ -479,6 +471,17 @@
             <td class="status-good">${val.NUM.toLocaleString()}</td>
           `;
           sniffTable.appendChild(row);
+          if (!base_metric || !base_metric[key]) {
+            console.warn(`Missing base_metric for key: ${key}`);
+            continue; 
+          }
+          const base_rtt = base_metric[key].rtt;
+          const base_latency = base_metric[key].latency;
+          const base_num = base_metric[key].num;
+          if (base_num < val.NUM && base_latency * 1.5 < latency) {
+            let msg = `Warning Latency ${latency} and NUM ${val.NUM}  on ${key}`;
+            updateAlerts(key, msg);
+          }
         }
       }
 
@@ -652,9 +655,9 @@
       }
 
       function getRttStatus(rtt) {
-        return rtt < 10000
+        return rtt < 800
           ? "status-good"
-          : rtt < 13000
+          : rtt < 130
           ? "status-warning"
           : "status-error";
       }
@@ -688,7 +691,7 @@
           .catch((err) => {
             console.error("Error fetching data:", err);
           });
-      }, 2000);
+      }, 30000);
 
       // Initialize dashboard
       fetchData();
