@@ -24,7 +24,7 @@ key_to_tag = {}
 key_to_value = {}
 sensors_value ={}
 mess ={}
-alpha = 0.1
+alpha = 0.05
 def is_if_up(ifname):
     try:
         result = subprocess.check_output(f"cat /sys/class/net/{ifname}/operstate",
