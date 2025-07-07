@@ -157,6 +157,7 @@ def detect():
 
 def monitor():
     time.sleep(3)
+    global queue_num
     while True:
         if KEYMATCH.qsize() > queue_num:
             conn_key = KEYMATCH.get()
