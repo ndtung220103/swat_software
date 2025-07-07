@@ -25,6 +25,8 @@ key_to_value = {}
 sensors_value ={}
 mess ={}
 alpha = 0.05
+queue_num = 20
+MAX_TIME = 999999999
 def is_if_up(ifname):
     try:
         result = subprocess.check_output(f"cat /sys/class/net/{ifname}/operstate",
@@ -156,41 +158,53 @@ def detect():
 def monitor():
     time.sleep(3)
     while True:
-        if KEYMATCH.qsize() > 20:
+        if KEYMATCH.qsize() > queue_num:
             conn_key = KEYMATCH.get()
-            if conn_key in request_packets and conn_key in response_packets:
+            src_part, dst_part = conn_key.split(" -> ")
+            src_ip, src_port = src_part.split(":")
+            dst_ip, dst_port = dst_part.split(":")
+
+            key = f"{src_ip} -> {dst_ip}"
+
+            if conn_key in request_packets:
                 request_times = request_packets[conn_key]
-                #response_times = response_packets[conn_key]
-                response_times = ack_packets[conn_key]
-
-                request_earliest = min(request_times)
-                response_latest = max(response_times)
-                request_latest = max(request_times)
-                response_earliest = min(response_times)
-
-                RTT = response_latest -request_earliest
-                Latency = request_latest -request_earliest
                 NUM = len(request_times)
+                if conn_key in ack_packets:
+                    #response_times = response_packets[conn_key]
+                    response_times = ack_packets[conn_key]
 
-                src_part, dst_part = conn_key.split(" -> ")
-                src_ip, src_port = src_part.split(":")
-                dst_ip, dst_port = dst_part.split(":")
+                    request_earliest = min(request_times)
+                    response_latest = max(response_times)
+                    request_latest = max(request_times)
+                    response_earliest = min(response_times)
 
-                key = f"{src_ip} -> {dst_ip}"
-                metrics = {
-                    "Latency": Latency,
-                    "RTT": RTT,
-                    "NUM": NUM
-                }
-                if key not in list_metric:
-                    list_metric[key] = metrics
+                    RTT = response_latest -request_earliest
+                    Latency = request_latest -request_earliest
+
+                    metrics = {
+                        "Latency": Latency,
+                        "RTT": RTT,
+                        "NUM": NUM
+                    }
+                    if key not in list_metric:
+                        list_metric[key] = metrics
+                    else:
+                        list_metric[key]["RTT"] = alpha * RTT + (1 - alpha) * list_metric[key]["RTT"]
+                        list_metric[key]["Latency"] = alpha * Latency + (1 - alpha) * list_metric[key]["Latency"]
+                        list_metric[key]["NUM"] = NUM
+
+                    queue_num = max(20, len(list_metric)*3)
+                    del request_packets[conn_key]
+                    del response_packets[conn_key]
+                    del ack_packets[conn_key]
                 else:
-                    list_metric[key]["RTT"] = alpha * RTT + (1 - alpha) * list_metric[key]["RTT"]
-                    list_metric[key]["Latency"] = alpha * Latency + (1 - alpha) * list_metric[key]["Latency"]
-                    list_metric[key]["NUM"] = NUM
-                del request_packets[conn_key]
-                del response_packets[conn_key]
-                del ack_packets[conn_key]
+                    metrics = {
+                        "Latency": MAX_TIME,
+                        "RTT": MAX_TIME,
+                        "NUM": NUM
+                    }
+                    list_metric[key] = metrics
+                    del request_packets[conn_key]
 
 def recive_values():
     time.sleep(0.5)
