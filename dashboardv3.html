@@ -245,7 +245,7 @@
       }
 
       .sniff-table tr {
-        height: 40px;              /* chiều cao mỗi dòng */
+        height: 40px; /* chiều cao mỗi dòng */
       }
       .sniff-table td,
       .sniff-table th {
@@ -272,7 +272,7 @@
           max-height: none;
           overflow-y: auto;
         }
-        .alerts-section{
+        .alerts-section {
           height: 60%;
         }
       }
@@ -426,6 +426,7 @@
       const base_metric = {};
       const flow_last_time = {};
       const currentAlerts = {};
+      let base_metric_keys = new Set();
 
       async function fetchData() {
         try {
@@ -451,6 +452,40 @@
           updateSensors(sensors);
           updateMetrics(metrics);
           showSwitchStats(currentSwitch, ports, flows);
+
+          const currentMetricKeys = new Set(Object.keys(metrics));
+          const hasNewMetrics = [...currentMetricKeys].some(
+            (key) => !base_metric_keys.has(key)
+          );
+
+          // Kiểm tra xem mess có rỗng không
+          const isAlertEmpty = Object.keys(currentAlerts).length === 0;
+          console.log(isAlertEmpty);
+          console.log(hasNewMetrics);
+          if (hasNewMetrics && isAlertEmpty) {
+            base_metric = {};
+            fetch("http://127.0.0.1:5000/metrics")
+              .then((res) => res.json())
+              .then((metrics) => {
+                base_metric_keys = new Set(Object.keys(metrics));
+                for (const [key, val] of Object.entries(metrics)) {
+                  const rtt = (val.RTT * 1e6).toFixed(2);
+                  const latency = (val.Latency * 1e6).toFixed(2);
+                  const num = val.NUM;
+
+                  base_metric[key] = {
+                    rtt: rtt,
+                    latency: latency,
+                    num: num,
+                  };
+
+                  console.log(base_metric[key]);
+                }
+              })
+              .catch((err) => {
+                console.error("Error fetching data:", err);
+              });
+          }
         } catch (error) {
           console.error("Error fetching data:", error);
           document.getElementById("sensors").innerHTML =
@@ -489,12 +524,12 @@
           sniffTable.appendChild(row);
           if (!base_metric || !base_metric[key]) {
             console.warn(`Missing base_metric for key: ${key}`);
-            continue; 
+            continue;
           }
           const base_rtt = base_metric[key].rtt;
           const base_latency = base_metric[key].latency;
           const base_num = base_metric[key].num;
-          if (base_num < val.NUM && base_latency * 1.5 < latency) {
+          if (base_num != val.NUM && base_latency * 1.5 < latency) {
             let msg = `Warning Latency ${latency} and NUM ${val.NUM}  on ${key}`;
             updateAlerts(key, msg);
           }
