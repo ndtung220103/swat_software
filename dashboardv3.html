@@ -460,9 +460,7 @@
 
           // Kiểm tra xem mess có rỗng không
           const isAlertEmpty = Object.keys(currentAlerts).length === 0;
-          console.log(isAlertEmpty);
-          console.log(hasNewMetrics);
-          if (hasNewMetrics && isAlertEmpty) {
+          if (!hasNewMetrics && !isAlertEmpty) {
             base_metric = {};
             fetch("http://127.0.0.1:5000/metrics")
               .then((res) => res.json())
@@ -725,6 +723,7 @@
         fetch("http://127.0.0.1:5000/metrics")
           .then((res) => res.json())
           .then((metrics) => {
+            base_metric_keys = new Set(Object.keys(metrics));
             for (const [key, val] of Object.entries(metrics)) {
               const rtt = (val.RTT * 1e6).toFixed(2);
               const latency = (val.Latency * 1e6).toFixed(2);
